@@ -120,6 +120,9 @@ if not patRB_group.noCommonPairs:
             _side="UnAff", stance_swing=False
         )
 
+        print(gpSeriesAff)
+        print(type(gpSeriesAff))
+
         gpSeries = pd.concat([gpSeries, gpSeriesAff])
         gpSeries = pd.concat([gpSeries, gpSeriesUnAff])
 
