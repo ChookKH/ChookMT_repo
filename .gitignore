@@ -1,3 +1,4 @@
 exportedData/*
 metadata/*
-experiment/*
+experiment.py
+revision.py
