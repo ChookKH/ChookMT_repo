@@ -40,105 +40,120 @@ patients, trials = loader(metadata_dir)
 print(f"Number of patients: {len(patients)}")
 print(f"Number of trials  : {len(trials)}")
 
-# unsensiblePairs = []; noCommonPairs_trials = []
+unsensiblePairs = []; noCommonPairs_trials = []
 
 patient_trials_dict = map_patients_trials(patients, trials)
-
-# print(patient_trials_dict.keys())
-
-# Taking the patient ES011 for example
-ES011 = patient_trials_dict["ES011"]
-
-print("\n\nLooping through elements in patient_trials_dict[ES011]")
 
 
 # === === === ===
 # Extracting features
-for trial in ES011:
-    print(f" - {trial.TrialID} ... ")
+for patientID, trialObjects in patient_trials_dict.items():
+    print(f"=========================\nDealing with {patientID}\n---")
 
-# Taking the first trial, for learning purposes
-ES011_T1 = ES011[0]
+    for t in trialObjects:
+        print(f" - {t.TrialID} ... ")
 
-print("\n\nTaking a look at one trial")
-# Grouping the patient's trial data and reference band together
-# - Specifically::
-patRB_group = patient_refband_grouping(
-    rb_dir, ES011_T1, errorband, _testSubjectsSide=None
-)
+        # Grouping the patient's trial data and reference band together
+        patRB_group = patient_refband_grouping(
+            rb_dir, t, errorband, _testSubjectsSide=None
+        )
+
+        # If only running for 1 subject (t = t)
+        # patRB_group = patient_refband_grouping(
+            # rb_dir, t, errorband, _testSubjectsSide=None
+        # )
+
 # Essentially ::
 # The gait cycle of the patient with respect to the affected (lateral) and
 # unaffected (contralateral) sides are being organized, together with the 
 # reference bands. Think of it as some kind of ORGANIZER
 
 
-if not patRB_group.noCommonPairs:
-    # If there is at least one common stride pair
+        if not patRB_group.noCommonPairs:
+        # If there is at least one common stride pair
 
-    for idx, pair in patRB_group.patientstridesFileMap.items():
-        # 'idx' simply refers to a stride pair
-        # - Pair 0
-        # - Pair 1
-        # - Pair 2 and so on ...
-        # 'pair' is a dictionary the has the following keys:
-        # - 'aff': {
-        #    'kinematics':<pathOfExportedBiomechanicalAngles_affSide>,
-        #    'gaitParameters':<pathOfGaitParameters_affSide>
-        # }
-        # - 'unaff' : {(correspondingly for unaffected side)}
-        phaseFeaturesSensibility = []
+            for idx, pair in patRB_group.patientstridesFileMap.items():
+                # 'idx' simply refers to a stride pair
+                # - Pair 0
+                # - Pair 1
+                # - Pair 2 and so on ...
+                # 'pair' is a dictionary the has the following keys:
+                # - 'aff': {
+                #    'kinematics':<pathOfExportedBiomechanicalAngles_affSide>,
+                #    'gaitParameters':<pathOfGaitParameters_affSide>
+                # }
+                # - 'unaff' : {(correspondingly for unaffected side)}
+                phaseFeaturesSensibility = []
 
-        strideID_Aff   = pair['aff']['kinematics'].name
-        strideID_UnAff = pair['unaff']['kinematics'].name
+                strideID_Aff   = pair['aff']['kinematics'].name
+                strideID_UnAff = pair['unaff']['kinematics'].name
 
-        ID_Aff = strideID_Aff.split('_')[-2]
-        ID_UnAff = strideID_UnAff.split('_')[-2]
+                ID_Aff = strideID_Aff.split('_')[-2]
+                ID_UnAff = strideID_UnAff.split('_')[-2]
 
-        stridePairID = ('_').join(strideID_Aff.split('_')[0:-2])
-        stridePairID = stridePairID + f"_A{ID_Aff}_" + f"U{ID_UnAff}"
-        print(f"    > Stride pair : {stridePairID}")
-
-
-        # === === === ===
-        # General patient stride data
-        strideGeneralData = pd.Series(
-            {
-                "StridePairID": stridePairID,
-                "Auxiliary": ES011_T1.WalkTool
-            }
-        ); gpSeries = pd.Series(strideGeneralData)
+                stridePairID = ('_').join(strideID_Aff.split('_')[0:-2])
+                stridePairID = stridePairID + f"_A{ID_Aff}_" + f"U{ID_UnAff}"
+                print(f"    > Stride pair : {stridePairID}")
 
 
-        # === === === ===
-        # Patient stride gait parameters data
-        gpSeriesAff = extract_gaitparameters(
-            patRB_group.patGPDict_aff[idx], ES011_T1.AffectedSide, 
-            _side="Aff", stance_swing=False
-        )
-        gpSeriesUnAff = extract_gaitparameters(
-            patRB_group.patGPDict_unaff[idx], ES011_T1.AffectedSide, 
-            _side="UnAff", stance_swing=False
-        )
-
-        print(gpSeriesAff)
-        print(type(gpSeriesAff))
-
-        gpSeries = pd.concat([gpSeries, gpSeriesAff])
-        gpSeries = pd.concat([gpSeries, gpSeriesUnAff])
+                # === === === ===
+                # General patient stride data
+                strideGeneralData = pd.Series(
+                    {
+                        "StridePairID": stridePairID,
+                        "Auxiliary": t.WalkTool
+                    }
+                ); gpSeries = pd.Series(strideGeneralData)
 
 
-        # Extracting the features, per pair of patient's stride data
-        # === === === ===
-        # Entire stride
-        # stride = extract_gaitphase_rawfeatures(
-        #     idx, patRB_group, stridePairID,
-        #     _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
-        # )
-        # Stance phase
-        stance = extract_gaitphase_rawfeatures(
-            idx, patRB_group, stridePairID,
-            _phaseStart="initialContact", _phaseEnd="endOfPreswing"
-        )
+                # === === === ===
+                # Patient stride gait parameters data
+                gpSeriesAff = extract_gaitparameters(
+                    patRB_group.patGPDict_aff[idx], t.AffectedSide, 
+                    _side="Aff", stance_swing=False
+                )
+                gpSeriesUnAff = extract_gaitparameters(
+                    patRB_group.patGPDict_unaff[idx], t.AffectedSide, 
+                    _side="UnAff", stance_swing=False
+                )
+
+                gpSeries = pd.concat([gpSeries, gpSeriesAff])
+                gpSeries = pd.concat([gpSeries, gpSeriesUnAff])
+
+                print(gpSeriesAff)
+
+
+                # === === === ===
+                # Healthy gait parameter data
+                h_gait = pd.read_excel('healthy_gait.xlsx')
+                h_gait_series = h_gait.set_index('Gait Parameter')['Computed Mean']
+                h_gait_series = h_gait_series.rename_axis(None)
+                print(h_gait_series)
+
+
+                # === === === ===
+                # Bool output
+                gpSeriesAff.index = gpSeriesAff.index.str.split('Aff').str[0]
+                result = (h_gait_series >= gpSeriesAff).astype(float)
+                print(result)
+
+                time.sleep(5)
+
+                # gpSeriesAff.index = gpSeriesAff.index.str.split('Aff').str[0]
+                # print(gpSeriesAff.index)
+
+                # Extracting the features, per pair of patient's stride data
+                # === === === ===
+                # Entire stride
+                # stride = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
+                # )
+                # Stance phase
+                stance = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="initialContact", _phaseEnd="endOfPreswing"
+                )
 
 # If the trial has no common pair at all due to all data being faulty
 else:
