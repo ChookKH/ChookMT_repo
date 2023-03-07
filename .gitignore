@@ -1,3 +1,4 @@
 exportedData/*
 metadata/*
+*.xlsx
 revision.py
