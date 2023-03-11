@@ -14,6 +14,8 @@ from stdutils import load_patients_trials as loader
 from stdutils import map_patients_trials
 from process_gaitparameters import extract_gaitparameters
 
+from ckhutils.bool import bool_output
+
 if len(sys.argv) < 4:
     print(
         "\nPossible usage:\npython3 experiment.py " +
@@ -122,6 +124,7 @@ for patientID, trialObjects in patient_trials_dict.items():
 
                 print(gpSeriesAff)
 
+                bool_output(gpSeriesAff)
 
                 # === === === ===
                 # Healthy gait parameter data
