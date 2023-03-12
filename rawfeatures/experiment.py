@@ -125,7 +125,7 @@ for patientID, trialObjects in patient_trials_dict.items():
                 print(gpSeriesAff)
 
                 bool_output(gpSeriesAff)
-
+                
                 # gpSeriesAff.index = gpSeriesAff.index.str.split('Aff').str[0]
                 # print(gpSeriesAff.index)
 
@@ -141,7 +141,7 @@ for patientID, trialObjects in patient_trials_dict.items():
                     idx, patRB_group, stridePairID,
                     _phaseStart="initialContact", _phaseEnd="endOfPreswing"
                 )
-
+                time.sleep(5)
 # If the trial has no common pair at all due to all data being faulty
 else:
     print("Warning: This trial data has no valid stride pairs")
