@@ -208,7 +208,7 @@ class gaitphase_rawfeatures:
         # Patient stats
         # -------------
         self.StatsDF = self.extract_patient_stats(phasePatDS_Aff, phasePatDS_UnAff)
-
+        print(self.StatsDF)
         # Patient and reference bands deviation stats
         # -------------------------------------------
         # The stats of the reference bands are defined as the following:
@@ -219,7 +219,7 @@ class gaitphase_rawfeatures:
             phaseRBLower_Aff, phaseRBMean_Aff, phaseRBUpper_Aff,
             phaseRBLower_UnAff, phaseRBMean_UnAff, phaseRBUpper_UnAff
         )
-
+        print(self.RBStatsDF)
 
         # === === === ===
         # Patient gait phase metadata
@@ -229,8 +229,7 @@ class gaitphase_rawfeatures:
             _tGaitLowerAff_RB, _tGaitUpperAff_RB,
             _tGaitLowerUnAff_RB, _tGaitUpperUnAff_RB
         )
-        print(self.Metadata)
-
+        
 
     def extract_patient_stats(self, _phasePatientAff, _phasePatientUnAff):
         '''
