@@ -126,22 +126,6 @@ for patientID, trialObjects in patient_trials_dict.items():
 
                 bool_output(gpSeriesAff)
 
-                # === === === ===
-                # Healthy gait parameter data
-                h_gait = pd.read_excel('healthy_gait.xlsx')
-                h_gait_series = h_gait.set_index('Gait Parameter')['Computed Mean']
-                h_gait_series = h_gait_series.rename_axis(None)
-                print(h_gait_series)
-
-
-                # === === === ===
-                # Bool output
-                gpSeriesAff.index = gpSeriesAff.index.str.split('Aff').str[0]
-                result = (h_gait_series >= gpSeriesAff).astype(float)
-                print(result)
-
-                time.sleep(5)
-
                 # gpSeriesAff.index = gpSeriesAff.index.str.split('Aff').str[0]
                 # print(gpSeriesAff.index)
 
