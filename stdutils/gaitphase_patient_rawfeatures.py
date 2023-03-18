@@ -208,7 +208,8 @@ class gaitphase_rawfeatures:
         # Patient stats
         # -------------
         self.StatsDF = self.extract_patient_stats(phasePatDS_Aff, phasePatDS_UnAff)
-        print(self.StatsDF)
+        # print(self.StatsDF)
+
         # Patient and reference bands deviation stats
         # -------------------------------------------
         # The stats of the reference bands are defined as the following:
@@ -219,7 +220,16 @@ class gaitphase_rawfeatures:
             phaseRBLower_Aff, phaseRBMean_Aff, phaseRBUpper_Aff,
             phaseRBLower_UnAff, phaseRBMean_UnAff, phaseRBUpper_UnAff
         )
-        print(self.RBStatsDF)
+        # print(self.RBStatsDF)
+
+
+        # === === === ===
+        # Update 18.03.2023 (Chook)
+        # -----------------
+        # Added a bool conversion for dataframe comparison between StatsDF and RBStatsDF
+        self.BoolDF = self.StatsDF.lt(self.RBStatsDF).astype(float)
+        # print(self.BoolDF)
+
 
         # === === === ===
         # Patient gait phase metadata
@@ -557,7 +567,7 @@ class gaitevent_rawfeatures:
         # Calculating the discrete differences between the patient and reference bands, also
         # categorizing them according to a positive or negative deviation
         # === === === ===
-        diff_series = pd.Series(index=_patVals.index)
+        diff_series = pd.Series(index=_patVals.index, dtype= float)
 
         for angle in _patVals.index:
             pat = _patVals[angle]; upper = _RBUpper[angle]; lower = _RBLower[angle]
