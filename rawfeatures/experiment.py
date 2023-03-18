@@ -12,6 +12,7 @@ from stdutils import patient_refband_grouping
 from stdutils import extract_gaitphase_rawfeatures
 from stdutils import load_patients_trials as loader
 from stdutils import map_patients_trials
+from stdutils.gaitphase_patient_rawfeatures import gaitphase_rawfeatures
 from process_gaitparameters import extract_gaitparameters
 
 from ckhutils.bool import bool_output
@@ -132,80 +133,76 @@ for patientID, trialObjects in patient_trials_dict.items():
                 # Extracting the features, per pair of patient's stride data
                 # === === === ===
                 # Entire stride
-                # stride = extract_gaitphase_rawfeatures(
-                #     idx, patRB_group, stridePairID,
-                #     _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
-                # )
+                stride = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
+                )
+
                 # Stance phase
                 stance = extract_gaitphase_rawfeatures(
                     idx, patRB_group, stridePairID,
                     _phaseStart="initialContact", _phaseEnd="endOfPreswing"
                 )
+
+                # Swing phase
+                swing = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="endOfPreswing", _phaseEnd="endOfTerminalSwing"
+                )
+
+                # === === === ===
+                # Perry phases
+                # Initial contact
+                InCnt = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="initialContact", _phaseEnd=None
+                )
+
+                # Load response
+                LdRsp = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="initialContact", _phaseEnd="endOfLoadingResponse"
+                )
+
+                # Mid stance
+                MdStn = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="endOfLoadingResponse", _phaseEnd="endOfMidstance"
+                )
+
+                # Terminal stance
+                TrStn = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="endOfMidstance", _phaseEnd="endOfTerminalStance"
+                )
+
+                # Pre swing
+                PrSwg = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="endOfTerminalStance", _phaseEnd="endOfPreswing"
+                )
+
+                # Initial Swing
+                InSwg = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="endOfPreswing", _phaseEnd="endOfInitialSwing"
+                )
+
+                # Mid swing
+                MdSwg = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="endOfInitialSwing", _phaseEnd="endOfMidswing"
+                )
+
+                # Terminal swing
+                TrSwg = extract_gaitphase_rawfeatures(
+                    idx, patRB_group, stridePairID,
+                    _phaseStart="endOfMidswing", _phaseEnd="endOfTerminalSwing"
+                )
                 time.sleep(5)
+
 # If the trial has no common pair at all due to all data being faulty
 else:
     print("Warning: This trial data has no valid stride pairs")
 
-sys.exit(0)
-
-
-
-
-
-
-# -----------TO BE CONTINUED-----------#
-        # # Swing phase
-        # pat_swingPhase = extract_gaitphase_rawfeatures(
-        #     idx, patRB_group, stridePairID,
-        #     _phaseStart="endOfPreswing", _phaseEnd="endOfTerminalSwing"
-        # )
-
-        # === === === ===
-        # Perry phases
-        # Initial contact
-        # pat_InCnt = extract_gaitphase_rawfeatures(
-        #     idx, patRB_group, stridePairID,
-        #     _phaseStart="initialContact", _phaseEnd=None
-        # )
-
-        #         # Load response
-        #         pat_LdRsp = extract_gaitphase_rawfeatures(
-        #             idx, patRB_group, stridePairID,
-        #             _phaseStart="initialContact", _phaseEnd="endOfLoadingResponse"
-        #         )
-
-        #         # Mid stance
-        #         pat_MdStn = extract_gaitphase_rawfeatures(
-        #             idx, patRB_group, stridePairID,
-        #             _phaseStart="endOfLoadingResponse", _phaseEnd="endOfMidstance"
-        #         )
-
-        #         # Terminal stance
-        #         pat_TrStn = extract_gaitphase_rawfeatures(
-        #             idx, patRB_group, stridePairID,
-        #             _phaseStart="endOfMidstance", _phaseEnd="endOfTerminalStance"
-        #         )
-
-        #         # Pre swing
-        #         pat_PrSwg = extract_gaitphase_rawfeatures(
-        #             idx, patRB_group, stridePairID,
-        #             _phaseStart="endOfTerminalStance", _phaseEnd="endOfPreswing"
-        #         )
-
-        #         # Initial Swing
-        #         pat_InSwg = extract_gaitphase_rawfeatures(
-        #             idx, patRB_group, stridePairID,
-        #             _phaseStart="endOfPreswing", _phaseEnd="endOfInitialSwing"
-        #         )
-
-        #         # Mid swing
-        #         pat_MdSwg = extract_gaitphase_rawfeatures(
-        #             idx, patRB_group, stridePairID,
-        #             _phaseStart="endOfInitialSwing", _phaseEnd="endOfMidswing"
-        #         )
-
-        #         # Terminal swing
-        #         pat_TrSwg = extract_gaitphase_rawfeatures(
-        #             idx, patRB_group, stridePairID,
-        #             _phaseStart="endOfMidswing", _phaseEnd="endOfTerminalSwing"
-        #         )
+sys.exit(0)  
