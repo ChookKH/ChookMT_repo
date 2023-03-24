@@ -2,3 +2,5 @@ exportedData/*
 metadata/*
 *.xlsx
 revision.py
+**/__pycache__/
+**/rawfeatures/__pycache__/

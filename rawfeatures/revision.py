@@ -37,12 +37,12 @@ refBand = rb_dir.name; patientsgroup = metadata_dir.name
 patients, trials = loader(metadata_dir)
 
 # :: would print unknowns
-# print(patients) 
+# print(patients)
 
 # :: check for data type
 # print(type(patients))
 
-# :: ERR print list 
+# :: ERR print list
 # for patient in patients:
 #     print(patient[0])
 
@@ -64,7 +64,7 @@ patient_trials_dict = map_patients_trials(patients, trials)
 # print(type(patient_trials_dict))
 
 # :: ERR too many values to unpack
-# for key, value in patient_trials_dict:    
+# for key, value in patient_trials_dict:
 #     print(key, value)
 
 # for key, value in patient_trials_dict.items():
@@ -98,7 +98,7 @@ patRB_group = patient_refband_grouping(
 )
 # # Essentially ::
 # # The gait cycle of the patient with respect to the affected (lateral) and
-# # unaffected (contralateral) sides are being organized, together with the 
+# # unaffected (contralateral) sides are being organized, together with the
 # # reference bands. Think of it as some kind of ORGANIZER
 
 
@@ -150,18 +150,19 @@ if not patRB_group.noCommonPairs: # :: ERR why .noCommonPairs is bool in patient
         # === === === ===
         # Patient stride gait parameters data
         gpSeriesAff = extract_gaitparameters(
-            patRB_group.patGPDict_aff[idx], ES011_T1.AffectedSide, 
+            patRB_group.patGPDict_aff[idx], ES011_T1.AffectedSide,
             _side="Aff", stance_swing=False
         )
         gpSeriesUnAff = extract_gaitparameters(
-            patRB_group.patGPDict_unaff[idx], ES011_T1.AffectedSide, 
+            patRB_group.patGPDict_unaff[idx], ES011_T1.AffectedSide,
             _side="UnAff", stance_swing=False
         )
 
         gpSeries = pd.concat([gpSeries, gpSeriesAff])
         gpSeries = pd.concat([gpSeries, gpSeriesUnAff])
 
-        # print(gpSeries)
+        print(gpSeriesAff)
+        #print(gpSeries[::-1])
 
         # Extracting the features, per pair of patient's stride data
         # === === === ===
