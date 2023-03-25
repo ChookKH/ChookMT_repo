@@ -208,6 +208,7 @@ class gaitphase_rawfeatures:
         # Patient stats
         # -------------
         self.StatsDF = self.extract_patient_stats(phasePatDS_Aff, phasePatDS_UnAff)
+        print(self.StatsDF)
 
         # Patient and reference bands deviation stats
         # -------------------------------------------
@@ -219,7 +220,15 @@ class gaitphase_rawfeatures:
             phaseRBLower_Aff, phaseRBMean_Aff, phaseRBUpper_Aff,
             phaseRBLower_UnAff, phaseRBMean_UnAff, phaseRBUpper_UnAff
         )
+        print(self.RBStatsDF)
 
+        # === === === ===
+        # Update 18.03.2023 (Chook)
+        # -----------------
+        # Added a bool conversion for dataframe comparison between StatsDF and RBStatsDF
+        self.BoolDF = self.StatsDF.lt(self.RBStatsDF).astype(float)
+        print(self.BoolDF)
+        
 
         # === === === ===
         # Patient gait phase metadata
