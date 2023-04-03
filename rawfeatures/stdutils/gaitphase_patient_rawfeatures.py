@@ -1,4 +1,5 @@
 import os, sys
+import io
 import csv
 import shutil
 import numpy as np
@@ -208,7 +209,7 @@ class gaitphase_rawfeatures:
         # Patient stats
         # -------------
         self.StatsDF = self.extract_patient_stats(phasePatDS_Aff, phasePatDS_UnAff)
-        print(self.StatsDF)
+        # print(self.StatsDF)
 
         # Patient and reference bands deviation stats
         # -------------------------------------------
@@ -220,14 +221,14 @@ class gaitphase_rawfeatures:
             phaseRBLower_Aff, phaseRBMean_Aff, phaseRBUpper_Aff,
             phaseRBLower_UnAff, phaseRBMean_UnAff, phaseRBUpper_UnAff
         )
-        print(self.RBStatsDF)
+        # print(self.RBStatsDF)
 
         # === === === ===
         # Update 18.03.2023 (Chook)
         # -----------------
-        # Added a bool conversion for dataframe comparison between StatsDF and RBStatsDF
-        self.BoolDF = self.StatsDF.lt(self.RBStatsDF).astype(float)
-        print(self.BoolDF)
+        # Added a boolean conversion for dataframe comparison between StatsDF and RBStatsDF
+        self.BoolDF = self.StatsDF.le(self.RBStatsDF).astype(float)
+        # print(self.BoolDF)
         
 
         # === === === ===
@@ -438,8 +439,8 @@ class gaitphase_rawfeatures:
                 "GaitStart_Aff": _tgLAffPat / 100,
                 "GaitWidth_UnAff": (_tgUUnAffPat - _tgLUnAffPat) / 100,
                 "GaitStart_UnAff": _tgLUnAffPat / 100,
-                "GaitWidthDiff_Aff": ((_tgUAffPat - _tgLAffPat) - (_tgUAffRB - _tgLAffRB)) / 100,
-                "GaitWidthDiff_UnAff": ((_tgUUnAffPat - _tgLUnAffPat) - (_tgUUnAffRB - _tgLUnAffRB)) / 100
+                # "GaitWidthDiff_Aff": ((_tgUAffPat - _tgLAffPat) - (_tgUAffRB - _tgLAffRB)) / 100,
+                # "GaitWidthDiff_UnAff": ((_tgUUnAffPat - _tgLUnAffPat) - (_tgUUnAffRB - _tgLUnAffRB)) / 100
             }
         )
 
@@ -567,7 +568,7 @@ class gaitevent_rawfeatures:
         # Calculating the discrete differences between the patient and reference bands, also
         # categorizing them according to a positive or negative deviation
         # === === === ===
-        diff_series = pd.Series(index=_patVals.index)
+        diff_series = pd.Series(index=_patVals.index, dtype=float)
 
         for angle in _patVals.index:
             pat = _patVals[angle]; upper = _RBUpper[angle]; lower = _RBLower[angle]
