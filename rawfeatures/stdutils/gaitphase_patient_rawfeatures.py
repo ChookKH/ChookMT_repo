@@ -223,12 +223,13 @@ class gaitphase_rawfeatures:
         )
         # print(self.RBStatsDF)
 
+
         # === === === ===
         # Update 18.03.2023 (Chook)
         # -----------------
         # Added a boolean conversion for dataframe comparison between StatsDF and RBStatsDF
-        self.BoolDF = self.StatsDF.le(self.RBStatsDF).astype(float)
-        # print(self.BoolDF)
+        self.BoolStatsDF = self.StatsDF.le(self.RBStatsDF).astype(float)
+        # print(self.BoolStatsDF)
         
 
         # === === === ===
@@ -239,7 +240,111 @@ class gaitphase_rawfeatures:
             _tGaitLowerAff_RB, _tGaitUpperAff_RB,
             _tGaitLowerUnAff_RB, _tGaitUpperUnAff_RB
         )
-        print(self.Metadata)
+
+
+        # === === === ===
+        # Update 05.04.2023 (Chook)
+        # -----------------
+        # Obtaining averaged gait phase metadata of healthy test-subjects
+        self.hGaitWidth, self.hTimeStamps = self.initialize_hMetadata()
+
+
+    def initialize_hMetadata(self):
+        '''
+        (Implemented by Chook)
+        Extract healthy gait stats
+        '''
+        # Create path to .dat file
+        current_dir = os.getcwd()
+        gEventsMedian = os.path.join(
+            current_dir, '..', 'refBand', 'gEventsMedian.dat'
+        )
+
+        # Read healthy subject .dat file
+        with open(gEventsMedian, mode='r') as file:
+            h_data = file.read()
+
+        # Read df and calculate mean
+        h_df = pd.read_csv(io.StringIO(h_data), sep=' ')
+        h_df = h_df.assign(MeanNorm=(h_df['LeftNorm'] + h_df['RightNorm'])/2)
+        h_df = h_df.drop(['LeftNorm', 'RightNorm'], axis=1)
+
+        # Converting df to series
+        h_df = h_df.rename(columns={'Unnamed: 0': ''})
+        h_string = h_df.to_string(header=False, index=False)
+        h_dict = {line.split()[0]: float(line.split()[1]) for line in h_string.split('\n')}
+        h_series = pd.Series(h_dict)
+        h_series = h_series/100
+
+        # Display gait width
+        gaitWidth = h_series.diff().dropna()
+        gaitWidth.index = ['LdRspWidth', 'MdStnWidth', 'TrStnWidth', 'PrSwgWidth', 
+                           'InSwgWidth', 'MdSwgWidth', 'TrSwgWidth']
+        gaitWidth.loc['StrideWidth'] = gaitWidth.iloc[:].sum()
+        gaitWidth.loc['StanceWidth'] = gaitWidth.iloc[:4].sum()
+        gaitWidth.loc['SwingWidth'] = gaitWidth.iloc[4:7].sum()
+
+        return gaitWidth, h_series
+
+
+    def get_hMetadata(self, _phaseStart, _phaseEnd):
+        '''
+        Function to classify healthy subject gait width and gait start percentage
+        '''
+        h_metadata = pd.Series({}, dtype=float)
+
+        # Entire stride
+        if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
+            gw="StrideWidth"
+
+        # Stance phase
+        if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
+            gw="StanceWidth"
+
+        # Swing phase
+        if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
+            gw="SwingWidth"
+
+        # === === === ===
+        # Perry phases (ignoring initial contact)
+        # Load response
+        if _phaseStart == 'initialContact' and _phaseEnd == 'endOfLoadingResponse':
+            gw="LdRspWidth"
+
+        # Mid stance
+        if _phaseStart == 'endOfLoadingResponse' and _phaseEnd == 'endOfMidstance':
+            gw="MdStnWidth"
+
+        # Terminal stance
+        if _phaseStart == 'endOfMidstance' and _phaseEnd == 'endOfTerminalStance':
+            gw="TrStnWidth"
+
+        # Pre swing
+        if _phaseStart == 'endOfTerminalStance' and _phaseEnd == 'endOfPreswing':
+            gw="PrSwgWidth"
+
+        # Initial swing
+        if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfInitialSwing':
+            gw="InSwgWidth"
+
+        # Mid swing
+        if _phaseStart == 'endOfInitialSwing' and _phaseEnd == 'endOfMidswing':
+            gw="MdSwgWidth"
+
+        # Terminal swing
+        if _phaseStart == 'endOfMidswing' and _phaseEnd == 'endOfTerminalSwing':
+            gw="TrSwgWidth"
+
+        h_metadata = pd.Series(
+            {
+                "GaitWidth_Aff": self.hGaitWidth[gw],
+                "GaitStart_Aff": self.hTimeStamps[_phaseStart],
+                "GaitWidth_UnAff": self.hGaitWidth[gw],
+                "GaitStart_UnAff": self.hTimeStamps[_phaseStart]
+            }
+        )
+
+        return h_metadata
 
 
     def extract_patient_stats(self, _phasePatientAff, _phasePatientUnAff):
