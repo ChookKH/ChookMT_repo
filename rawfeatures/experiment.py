@@ -255,7 +255,7 @@ for patientID, trialObjects in patient_trials_dict.items():
                 h_TrSwg = TrSwg_hMetadata
                 TrSwg_bool = series_compare(p_TrSwg, h_TrSwg)
                 
-                time.sleep(5)
+                
 
 # If the trial has no common pair at all due to all data being faulty
 else:
