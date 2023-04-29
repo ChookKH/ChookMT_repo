@@ -15,8 +15,8 @@ def bool_output(seriesAff):
     seriesAff.index = seriesAff.index.str.split('Aff').str[0]
     result = (h_gait_series >= seriesAff).astype(float)
 
-    print(h_gait_series)
-    print(result)
+    # print(h_gait_series)
+    # print(result)
 
 
 def series_compare(seriesPatient, seriesHealthy):
@@ -24,4 +24,4 @@ def series_compare(seriesPatient, seriesHealthy):
     Function to compare subject and healthy subject, converting into bool
     '''
     series_bool = (seriesPatient <= seriesHealthy).astype(float)
-    print(series_bool)
+    # print(series_bool)

@@ -137,7 +137,10 @@ for patientID, trialObjects in patient_trials_dict.items():
                     idx, patRB_group, stridePairID,
                     _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
                 )
-                
+
+                stride_RB_check = stride.within_RB_check(stride.StatsDF,stride.RBStatsDF)
+                # print(stride_df_comp)
+
                 # Stance phase
                 print('Stance phase:')
                 stance = extract_gaitphase_rawfeatures(
@@ -145,6 +148,7 @@ for patientID, trialObjects in patient_trials_dict.items():
                     _phaseStart="initialContact", _phaseEnd="endOfPreswing"
                 )
 
+                stance_RB_check = stance.within_RB_check(stance.StatsDF,stance.RBStatsDF)
                 stance_hMetadata = stance.get_hMetadata("initialContact", "endOfPreswing")
                 p_stance = stance.Metadata
                 h_stance = stance_hMetadata
@@ -157,103 +161,105 @@ for patientID, trialObjects in patient_trials_dict.items():
                     _phaseStart="endOfPreswing", _phaseEnd="endOfTerminalSwing"
                 )
 
+                swing_RB_check = swing.within_RB_check(swing.StatsDF,swing.RBStatsDF)
                 swing_hMetadata = swing.get_hMetadata("endOfPreswing", "endOfTerminalSwing")
                 p_swing = swing.Metadata
                 h_swing = swing_hMetadata
                 swing_bool = series_compare(p_swing, h_swing)
+                # sys.exit()
 
-                # === === === ===
-                # Perry phases
-                # Initial contact
-                print('Initial contact:')
-                InCnt = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="initialContact", _phaseEnd=None
-                )
+                # # === === === ===
+                # # Perry phases
+                # # Initial contact
+                # print('Initial contact:')
+                # InCnt = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="initialContact", _phaseEnd=None
+                # )
 
-                # Load response
-                print('Load response:')
-                LdRsp = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="initialContact", _phaseEnd="endOfLoadingResponse"
-                )
+                # # Load response
+                # print('Load response:')
+                # LdRsp = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="initialContact", _phaseEnd="endOfLoadingResponse"
+                # )
 
-                LdRsp_hMetadata = LdRsp.get_hMetadata("initialContact", "endOfLoadingResponse")
-                p_LdRsp = LdRsp.Metadata
-                h_LdRsp = LdRsp_hMetadata
-                LdRsp_bool = series_compare(p_LdRsp, h_LdRsp)
+                # LdRsp_hMetadata = LdRsp.get_hMetadata("initialContact", "endOfLoadingResponse")
+                # p_LdRsp = LdRsp.Metadata
+                # h_LdRsp = LdRsp_hMetadata
+                # LdRsp_bool = series_compare(p_LdRsp, h_LdRsp)
 
-                # Mid stance
-                print('Mid stance:')
-                MdStn = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfLoadingResponse", _phaseEnd="endOfMidstance"
-                )
+                # # Mid stance
+                # print('Mid stance:')
+                # MdStn = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="endOfLoadingResponse", _phaseEnd="endOfMidstance"
+                # )
 
-                MdStn_hMetadata = MdStn.get_hMetadata("endOfLoadingResponse", "endOfMidstance")
-                p_MdStn = MdStn.Metadata
-                h_MdStn = MdStn_hMetadata
-                MdStn_bool = series_compare(p_MdStn, h_MdStn)
+                # MdStn_hMetadata = MdStn.get_hMetadata("endOfLoadingResponse", "endOfMidstance")
+                # p_MdStn = MdStn.Metadata
+                # h_MdStn = MdStn_hMetadata
+                # MdStn_bool = series_compare(p_MdStn, h_MdStn)
 
-                # Terminal stance
-                print('Terminal stance:')
-                TrStn = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfMidstance", _phaseEnd="endOfTerminalStance"
-                )
+                # # Terminal stance
+                # print('Terminal stance:')
+                # TrStn = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="endOfMidstance", _phaseEnd="endOfTerminalStance"
+                # )
 
-                TrStn_hMetadata = swing.get_hMetadata("endOfMidstance", "endOfTerminalStance")
-                p_TrStn = TrStn.Metadata
-                h_TrStn = TrStn_hMetadata
-                TrStn_bool = series_compare(p_TrStn, h_TrStn)
+                # TrStn_hMetadata = swing.get_hMetadata("endOfMidstance", "endOfTerminalStance")
+                # p_TrStn = TrStn.Metadata
+                # h_TrStn = TrStn_hMetadata
+                # TrStn_bool = series_compare(p_TrStn, h_TrStn)
 
-                # Pre swing
-                print('Pre swing:')
-                PrSwg = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfTerminalStance", _phaseEnd="endOfPreswing"
-                )
+                # # Pre swing
+                # print('Pre swing:')
+                # PrSwg = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="endOfTerminalStance", _phaseEnd="endOfPreswing"
+                # )
 
-                PrSwg_hMetadata = swing.get_hMetadata("endOfTerminalStance", "endOfPreswing")
-                p_PrSwg = PrSwg.Metadata
-                h_PrSwg = PrSwg_hMetadata
-                PrSwg_bool = series_compare(p_PrSwg, h_PrSwg)
+                # PrSwg_hMetadata = swing.get_hMetadata("endOfTerminalStance", "endOfPreswing")
+                # p_PrSwg = PrSwg.Metadata
+                # h_PrSwg = PrSwg_hMetadata
+                # PrSwg_bool = series_compare(p_PrSwg, h_PrSwg)
 
-                # Initial Swing
-                print('Initial swing:')
-                InSwg = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfPreswing", _phaseEnd="endOfInitialSwing"
-                )
+                # # Initial Swing
+                # print('Initial swing:')
+                # InSwg = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="endOfPreswing", _phaseEnd="endOfInitialSwing"
+                # )
 
-                InSwg_hMetadata = InSwg.get_hMetadata("endOfPreswing", "endOfInitialSwing")
-                p_InSwg = InSwg.Metadata
-                h_InSwg = InSwg_hMetadata
-                InSwg_bool = series_compare(p_InSwg, h_InSwg)
+                # InSwg_hMetadata = InSwg.get_hMetadata("endOfPreswing", "endOfInitialSwing")
+                # p_InSwg = InSwg.Metadata
+                # h_InSwg = InSwg_hMetadata
+                # InSwg_bool = series_compare(p_InSwg, h_InSwg)
 
-                # Mid swing
-                print('Mid swing:')
-                MdSwg = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfInitialSwing", _phaseEnd="endOfMidswing"
-                )
+                # # Mid swing
+                # print('Mid swing:')
+                # MdSwg = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="endOfInitialSwing", _phaseEnd="endOfMidswing"
+                # )
 
-                MdSwg_hMetadata = MdSwg.get_hMetadata("endOfInitialSwing", "endOfMidswing")
-                p_MdSwg = MdSwg.Metadata
-                h_MdSwg = MdSwg_hMetadata
-                MdSwg_bool = series_compare(p_MdSwg, h_MdSwg)
+                # MdSwg_hMetadata = MdSwg.get_hMetadata("endOfInitialSwing", "endOfMidswing")
+                # p_MdSwg = MdSwg.Metadata
+                # h_MdSwg = MdSwg_hMetadata
+                # MdSwg_bool = series_compare(p_MdSwg, h_MdSwg)
 
-                # Terminal swing
-                print('Terminal swing:')
-                TrSwg = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfMidswing", _phaseEnd="endOfTerminalSwing"
-                )
+                # # Terminal swing
+                # print('Terminal swing:')
+                # TrSwg = extract_gaitphase_rawfeatures(
+                #     idx, patRB_group, stridePairID,
+                #     _phaseStart="endOfMidswing", _phaseEnd="endOfTerminalSwing"
+                # )
 
-                TrSwg_hMetadata = TrSwg.get_hMetadata("endOfMidswing", "endOfTerminalSwing")
-                p_TrSwg = TrSwg.Metadata
-                h_TrSwg = TrSwg_hMetadata
-                TrSwg_bool = series_compare(p_TrSwg, h_TrSwg)
+                # TrSwg_hMetadata = TrSwg.get_hMetadata("endOfMidswing", "endOfTerminalSwing")
+                # p_TrSwg = TrSwg.Metadata
+                # h_TrSwg = TrSwg_hMetadata
+                # TrSwg_bool = series_compare(p_TrSwg, h_TrSwg)
                 
                 
 

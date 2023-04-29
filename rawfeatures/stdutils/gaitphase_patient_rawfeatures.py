@@ -223,12 +223,11 @@ class gaitphase_rawfeatures:
         )
         # print(self.RBStatsDF)
 
-
         # === === === ===
         # Update 18.03.2023 (Chook)
         # -----------------
         # Added a boolean conversion for dataframe comparison between StatsDF and RBStatsDF
-        self.BoolStatsDF = self.StatsDF.le(self.RBStatsDF).astype(float)
+        # self.BoolStatsDF = self.StatsDF.le(self.RBStatsDF).astype(float)
         # print(self.BoolStatsDF)
         
 
@@ -248,6 +247,23 @@ class gaitphase_rawfeatures:
         # Obtaining averaged gait phase metadata of healthy test-subjects
         self.hGaitWidth, self.hTimeStamps = self.initialize_hMetadata()
 
+
+    # === === === ===
+    # Update 27.04.2023 (Chook)
+    # -----------------
+    # Changed comparison from less than to within refband (within=1, else 0)
+    def within_RB_check(self, pat_df, rb_df):
+
+        output_df = pd.DataFrame()
+
+        output_df['Min'] = ((pat_df['Min'] >= rb_df['Min']) &
+                                (pat_df['Min'] <= rb_df['Max'])).astype(int)
+        output_df['Median'] = ((pat_df['Median'] >= rb_df['Min']) & 
+                                (pat_df['Median'] <= rb_df['Max'])).astype(int)
+        output_df['Max'] = ((pat_df['Max'] >= rb_df['Min']) &
+                                (pat_df['Max'] <= rb_df['Max'])).astype(int)
+
+        return output_df 
 
     def initialize_hMetadata(self):
         '''
@@ -305,35 +321,35 @@ class gaitphase_rawfeatures:
         if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
             gw="SwingWidth"
 
-        # === === === ===
-        # Perry phases (ignoring initial contact)
-        # Load response
-        if _phaseStart == 'initialContact' and _phaseEnd == 'endOfLoadingResponse':
-            gw="LdRspWidth"
+        # # === === === ===
+        # # Perry phases (ignoring initial contact)
+        # # Load response
+        # if _phaseStart == 'initialContact' and _phaseEnd == 'endOfLoadingResponse':
+        #     gw="LdRspWidth"
 
-        # Mid stance
-        if _phaseStart == 'endOfLoadingResponse' and _phaseEnd == 'endOfMidstance':
-            gw="MdStnWidth"
+        # # Mid stance
+        # if _phaseStart == 'endOfLoadingResponse' and _phaseEnd == 'endOfMidstance':
+        #     gw="MdStnWidth"
 
-        # Terminal stance
-        if _phaseStart == 'endOfMidstance' and _phaseEnd == 'endOfTerminalStance':
-            gw="TrStnWidth"
+        # # Terminal stance
+        # if _phaseStart == 'endOfMidstance' and _phaseEnd == 'endOfTerminalStance':
+        #     gw="TrStnWidth"
 
-        # Pre swing
-        if _phaseStart == 'endOfTerminalStance' and _phaseEnd == 'endOfPreswing':
-            gw="PrSwgWidth"
+        # # Pre swing
+        # if _phaseStart == 'endOfTerminalStance' and _phaseEnd == 'endOfPreswing':
+        #     gw="PrSwgWidth"
 
-        # Initial swing
-        if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfInitialSwing':
-            gw="InSwgWidth"
+        # # Initial swing
+        # if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfInitialSwing':
+        #     gw="InSwgWidth"
 
-        # Mid swing
-        if _phaseStart == 'endOfInitialSwing' and _phaseEnd == 'endOfMidswing':
-            gw="MdSwgWidth"
+        # # Mid swing
+        # if _phaseStart == 'endOfInitialSwing' and _phaseEnd == 'endOfMidswing':
+        #     gw="MdSwgWidth"
 
-        # Terminal swing
-        if _phaseStart == 'endOfMidswing' and _phaseEnd == 'endOfTerminalSwing':
-            gw="TrSwgWidth"
+        # # Terminal swing
+        # if _phaseStart == 'endOfMidswing' and _phaseEnd == 'endOfTerminalSwing':
+        #     gw="TrSwgWidth"
 
         h_metadata = pd.Series(
             {

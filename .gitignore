@@ -5,3 +5,4 @@ revision.py
 **/__pycache__/
 **/rawfeatures/__pycache__/
 literature/
+small_tests.py
