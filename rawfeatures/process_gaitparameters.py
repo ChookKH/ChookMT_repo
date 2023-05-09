@@ -60,5 +60,5 @@ def extract_gaitparameters(gp, _affSide, _side="Aff", stance_swing=False):
     gpSeries = pd.concat([gpSeries, pd.Series([gp['strideLength'] / refLegLength], index=[f'StrideFactor{_side}'])])
 
     gpSeries = pd.concat([gpSeries, pd.Series([gp['stepWidth'] / pelvisWidth], index=[f'StepWidth{_side}'])])
-
+    
     return gpSeries

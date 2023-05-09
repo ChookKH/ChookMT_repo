@@ -1,20 +1,46 @@
 import pandas as pd
+import os
+import io
 
-# Define two dataframes with the same shape and column names
-df1 = pd.DataFrame([[1, 2, 3], [4, 5, 6], [7, 8, 9]], columns=['min', 'median', 'max'])
-df2 = pd.DataFrame([[2, 4, 6], [8, 10, 12], [14, 16, 18]], columns=['min', 'median', 'max'])
+cwd = os.getcwd()
 
-# Create a boolean mask indicating which rows meet the median comparison criteria
-median_mask = (df1['median'] >= df2['min']) & (df1['median'] <= df2['max'])
+current_dir = os.getcwd()
+newRefband = os.path.join(
+    current_dir, '..', 'refBand', 'RefBand_GaitPE_repTrials_n1.dat'
+)
 
-# Create a dataframe with the max and min comparison results
-mm_comparison = pd.DataFrame({
-    'max_comparison': df1['max'].max() < df2['max'].max(),
-    'min_comparison': df1['min'].min() > df2['min'].min()
-}, index=[0])
+with open(newRefband, mode='r') as file:
+            h_data = file.read()
 
-# Combine the three dataframes into a single dataframe
-output_df = pd.concat([mm_comparison, median_mask.astype(int)], axis=1)
+# read file
+h_df = pd.read_csv(io.StringIO(h_data), sep=' ')
+h_df = h_df.rename(columns={'Unnamed: 0': ''})
 
-# Print the dataframe without the index row
-print(output_df.to_string(index=False))
+gait_phase_duration = h_df.iloc[:6, :]
+gait_parameters = h_df.iloc[6:18, :]
+gait_parameters = gait_parameters.rename(columns={gait_parameters.columns[0]: 'Measure'})
+gait_parameters = gait_parameters.set_index('Measure')
+print(gait_parameters)
+gait_phases = h_df.iloc[18:, :]
+
+series_data = {'gaitSpeedAff': 0.919874, 'stepTimeAff': 0.480000, 'cadenceAff': 2.030450,
+               'strideTimeAff': 0.985000, 'sSupportPortionAff': 0.350254, 'singleSupportTimeAff': 0.345000,
+               'dSupportPortionAff': 0.299492, 'doubleSupportTimeAff': 0.295000, 'limpIdxAff': 1.020260,
+               'StepFactorAff': 0.557138, 'StrideFactorAff': 1.053577, 'StepWidthAff': 0.830002}
+
+s = pd.Series(series_data)
+
+s.index = ['gaitSpeed', 'stepTime', 'cadence', 'strideTime', 'sSupportPortion',
+            'singleSupportTime', 'dSupportPortion', 'doubleSupportTime', 'limpIdx',
+            'StepFactor', 'StrideFactor', 'StepWidth']
+
+s_df = s.to_frame().rename(columns={0: 'Stats'})
+print(s_df)
+
+sd_df = pd.DataFrame(((gait_parameters['Lower-S.D'] <= s_df['Stats']) & (s_df['Stats'] <= gait_parameters['Upper-S.D'])).astype(int), columns=['S.D'])
+ci_df =pd.DataFrame(((gait_parameters['Upper-CI'] <= s_df['Stats']) & (s_df['Stats'] <= gait_parameters['Upper-CI'])).astype(int), columns=['CI'])
+merged_df = pd.merge(sd_df, ci_df, on='Measure')
+not_df = ~merged_df.astype(bool)
+not_df = not_df.astype(int)
+print(not_df)
+

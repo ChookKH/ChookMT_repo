@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy import integrate
 from collections import defaultdict
+from ckhutils.h_data import healthy_data
 
 
 def check_user_phaseStartEnd(_usrarg):
@@ -245,123 +246,177 @@ class gaitphase_rawfeatures:
         # Update 05.04.2023 (Chook)
         # -----------------
         # Obtaining averaged gait phase metadata of healthy test-subjects
-        self.hGaitWidth, self.hTimeStamps = self.initialize_hMetadata()
+        self.LowerSD, self.UpperSD, self.LowerCI, self.UpperCI = self.initialize_hMetadata()
 
 
     # === === === ===
     # Update 27.04.2023 (Chook)
     # -----------------
-    # Changed comparison from less than to within refband (within=1, else 0)
+    # Changed comparison from less than to within refband (within=0, else 1)
     def within_RB_check(self, pat_df, rb_df):
-
+        '''
+        Method to check whether the patient stats lie within refband stats
+        '''
         output_df = pd.DataFrame()
 
         output_df['Min'] = ((pat_df['Min'] >= rb_df['Min']) &
-                                (pat_df['Min'] <= rb_df['Max'])).astype(int)
+                            (pat_df['Min'] <= rb_df['Max'])).astype(int)
         output_df['Median'] = ((pat_df['Median'] >= rb_df['Min']) & 
-                                (pat_df['Median'] <= rb_df['Max'])).astype(int)
+                            (pat_df['Median'] <= rb_df['Max'])).astype(int)
         output_df['Max'] = ((pat_df['Max'] >= rb_df['Min']) &
-                                (pat_df['Max'] <= rb_df['Max'])).astype(int)
+                            (pat_df['Max'] <= rb_df['Max'])).astype(int)
+        
+        output_df = ~output_df.astype(bool)
+        output_df = output_df.astype(int)
 
         return output_df 
+
 
     def initialize_hMetadata(self):
         '''
         (Implemented by Chook)
         Extract healthy gait stats
         '''
-        # Create path to .dat file
-        current_dir = os.getcwd()
-        gEventsMedian = os.path.join(
-            current_dir, '..', 'refBand', 'gEventsMedian.dat'
-        )
+        healthyData = healthy_data()
 
-        # Read healthy subject .dat file
-        with open(gEventsMedian, mode='r') as file:
-            h_data = file.read()
+        lowerEventsSD = healthyData.gait_eve[['Measure', 'Lower-S.D']].set_index('Measure')
+        upperEventsSD = healthyData.gait_eve[['Measure', 'Upper-S.D']].set_index('Measure')
+        lowerEventsCI = healthyData.gait_eve[['Measure', 'Lower-CI']].set_index('Measure')
+        upperEventsCI = healthyData.gait_eve[['Measure', 'Upper-CI']].set_index('Measure')
 
-        # Read df and calculate mean
-        h_df = pd.read_csv(io.StringIO(h_data), sep=' ')
-        h_df = h_df.assign(MeanNorm=(h_df['LeftNorm'] + h_df['RightNorm'])/2)
-        h_df = h_df.drop(['LeftNorm', 'RightNorm'], axis=1)
+        lowerPhaseSD = healthyData.gait_pha[['Measure', 'Lower-S.D']].set_index('Measure')
+        upperPhaseSD = healthyData.gait_pha[['Measure', 'Upper-S.D']].set_index('Measure')
+        lowerPhaseCI = healthyData.gait_pha[['Measure', 'Lower-CI']].set_index('Measure')
+        upperPhaseCI = healthyData.gait_pha[['Measure', 'Upper-CI']].set_index('Measure')
 
-        # Converting df to series
-        h_df = h_df.rename(columns={'Unnamed: 0': ''})
-        h_string = h_df.to_string(header=False, index=False)
-        h_dict = {line.split()[0]: float(line.split()[1]) for line in h_string.split('\n')}
-        h_series = pd.Series(h_dict)
-        h_series = h_series/100
+        mergedLowerSD = pd.concat([lowerEventsSD, lowerPhaseSD], axis=0)/100
+        mergedUpperSD = pd.concat([upperEventsSD, upperPhaseSD], axis=0)/100
+        mergedLowerCI = pd.concat([lowerEventsCI, lowerPhaseCI], axis=0)/100
+        mergedUpperCI = pd.concat([upperEventsCI, upperPhaseCI], axis=0)/100
 
-        # Display gait width
-        gaitWidth = h_series.diff().dropna()
-        gaitWidth.index = ['LdRspWidth', 'MdStnWidth', 'TrStnWidth', 'PrSwgWidth', 
-                           'InSwgWidth', 'MdSwgWidth', 'TrSwgWidth']
-        gaitWidth.loc['StrideWidth'] = gaitWidth.iloc[:].sum()
-        gaitWidth.loc['StanceWidth'] = gaitWidth.iloc[:4].sum()
-        gaitWidth.loc['SwingWidth'] = gaitWidth.iloc[4:7].sum()
+        mergedLowerSD.loc['initialContact'] = 0
+        mergedUpperSD.loc['initialContact'] = 0
+        mergedLowerCI.loc['initialContact'] = 0
+        mergedUpperCI.loc['initialContact'] = 0
 
-        return gaitWidth, h_series
+        mergedLowerSD.loc['SwingWidth'] = 1 - mergedLowerSD.loc['endOfPreswing']
+        mergedUpperSD.loc['SwingWidth'] = 1 - mergedUpperSD.loc['endOfPreswing']
+        mergedLowerCI.loc['SwingWidth'] = 1 - mergedLowerCI.loc['endOfPreswing']
+        mergedUpperCI.loc['SwingWidth'] = 1 - mergedUpperCI.loc['endOfPreswing']
+
+        mergedLowerSD = mergedLowerSD.rename(columns={'Lower-S.D': ''})
+        mergedUpperSD = mergedUpperSD.rename(columns={'Upper-S.D': ''})
+        mergedLowerCI = mergedLowerSD.rename(columns={'Lower-CI': ''})
+        mergedUpperCI = mergedUpperSD.rename(columns={'Upper-CI': ''})
+        # print()
+        return mergedLowerSD, mergedUpperSD, mergedLowerCI, mergedUpperCI
 
 
-    def get_hMetadata(self, _phaseStart, _phaseEnd):
+    def get_hUpperMetadata(self, _phaseStart, _phaseEnd):
         '''
         Function to classify healthy subject gait width and gait start percentage
         '''
         h_metadata = pd.Series({}, dtype=float)
 
-        # Entire stride
-        if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
-            gw="StrideWidth"
+        if sys.argv[3] == 'std':
+            # Entire stride
+            if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
+                gw="StrideWidth"
 
-        # Stance phase
-        if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
-            gw="StanceWidth"
+            # Stance phase
+            if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
+                gw="endOfPreswing"
 
-        # Swing phase
-        if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
-            gw="SwingWidth"
+            # Swing phase
+            if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
+                gw="SwingWidth"
 
-        # # === === === ===
-        # # Perry phases (ignoring initial contact)
-        # # Load response
-        # if _phaseStart == 'initialContact' and _phaseEnd == 'endOfLoadingResponse':
-        #     gw="LdRspWidth"
+                h_upper_metadata = pd.Series(
+                    {
+                        "GaitWidth_Aff": self.UpperSD.loc[gw].values[0],
+                        "GaitStart_Aff": self.UpperSD.loc[_phaseStart].values[0],
+                        "GaitWidth_UnAff": self.UpperSD.loc[gw].values[0],
+                        "GaitStart_UnAff": self.UpperSD.loc[_phaseStart].values[0]
+                    }
+                )
+    
+        if sys.argv[3] == 'ci':
+            # Entire stride
+            if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
+                gw="StrideWidth"
 
-        # # Mid stance
-        # if _phaseStart == 'endOfLoadingResponse' and _phaseEnd == 'endOfMidstance':
-        #     gw="MdStnWidth"
+            # Stance phase
+            if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
+                gw="endOfPreswing"
 
-        # # Terminal stance
-        # if _phaseStart == 'endOfMidstance' and _phaseEnd == 'endOfTerminalStance':
-        #     gw="TrStnWidth"
+            # Swing phase
+            if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
+                gw="SwingWidth"
 
-        # # Pre swing
-        # if _phaseStart == 'endOfTerminalStance' and _phaseEnd == 'endOfPreswing':
-        #     gw="PrSwgWidth"
+            h_upper_metadata = pd.Series(
+                {
+                    "GaitWidth_Aff": self.UpperCI.loc[gw].values[0],
+                    "GaitStart_Aff": self.UpperCI.loc[_phaseStart].values[0],
+                    "GaitWidth_UnAff": self.UpperCI.loc[gw].values[0],
+                    "GaitStart_UnAff": self.UpperCI.loc[_phaseStart].values[0]
+                }
+            )
 
-        # # Initial swing
-        # if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfInitialSwing':
-        #     gw="InSwgWidth"
+        return h_upper_metadata
 
-        # # Mid swing
-        # if _phaseStart == 'endOfInitialSwing' and _phaseEnd == 'endOfMidswing':
-        #     gw="MdSwgWidth"
 
-        # # Terminal swing
-        # if _phaseStart == 'endOfMidswing' and _phaseEnd == 'endOfTerminalSwing':
-        #     gw="TrSwgWidth"
+    def get_hLowerMetadata(self, _phaseStart, _phaseEnd):
+        '''
+        Function to classify healthy subject gait width and gait start percentage
+        '''
+        h_metadata = pd.Series({}, dtype=float)
 
-        h_metadata = pd.Series(
-            {
-                "GaitWidth_Aff": self.hGaitWidth[gw],
-                "GaitStart_Aff": self.hTimeStamps[_phaseStart],
-                "GaitWidth_UnAff": self.hGaitWidth[gw],
-                "GaitStart_UnAff": self.hTimeStamps[_phaseStart]
-            }
-        )
+        if sys.argv[3] == 'std':
+            # Entire stride
+            if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
+                gw="StrideWidth"
 
-        return h_metadata
+            # Stance phase
+            if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
+                gw="endOfPreswing"
 
+            # Swing phase
+            if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
+                gw="SwingWidth"
+
+            h_lower_metadata = pd.Series(
+                {
+                    "GaitWidth_Aff": self.LowerSD.loc[gw].values[0],
+                    "GaitStart_Aff": self.LowerSD.loc[_phaseStart].values[0],
+                    "GaitWidth_UnAff": self.LowerSD.loc[gw].values[0],
+                    "GaitStart_UnAff": self.LowerSD.loc[_phaseStart].values[0]
+                }
+            )
+    
+        if sys.argv[3] == 'ci':
+            # Entire stride
+            if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
+                gw="StrideWidth"
+
+            # Stance phase
+            if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
+                gw="endOfPreswing"
+
+            # Swing phase
+            if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
+                gw="SwingWidth"
+
+            h_lower_metadata = pd.Series(
+                {
+                    "GaitWidth_Aff": self.LowerCI.loc[gw].values[0],
+                    "GaitStart_Aff": self.LowerCI.loc[_phaseStart].values[0],
+                    "GaitWidth_UnAff": self.LowerCI.loc[gw].values[0],
+                    "GaitStart_UnAff": self.LowerCI.loc[_phaseStart].values[0]
+                }
+            )
+
+        return h_lower_metadata
+    
 
     def extract_patient_stats(self, _phasePatientAff, _phasePatientUnAff):
         '''
