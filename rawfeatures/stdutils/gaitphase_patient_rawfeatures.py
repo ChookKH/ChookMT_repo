@@ -172,24 +172,24 @@ class gaitphase_rawfeatures:
 
         # === === === ===
         # Partitioning the reference bands and patient's curves accordingly
-        phaseRBMean_Aff, phaseRBMean_UnAff = self.extract_phaseDF(
-            _RB_MeanDF,
-            _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
-            _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
-            _affNormFeaturesDict, _unaffNormFeaturesDict
-        )
-        phaseRBUpper_Aff, phaseRBUpper_UnAff = self.extract_phaseDF(
-            _RB_UpperDF,
-            _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
-            _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
-            _affNormFeaturesDict, _unaffNormFeaturesDict
-        )
-        phaseRBLower_Aff, phaseRBLower_UnAff = self.extract_phaseDF(
-            _RB_LowerDF,
-            _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
-            _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
-            _affNormFeaturesDict, _unaffNormFeaturesDict
-        )
+        # phaseRBMean_Aff, phaseRBMean_UnAff = self.extract_phaseDF(
+        #     _RB_MeanDF,
+        #     _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
+        #     _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
+        #     _affNormFeaturesDict, _unaffNormFeaturesDict
+        # )
+        # phaseRBUpper_Aff, phaseRBUpper_UnAff = self.extract_phaseDF(
+        #     _RB_UpperDF,
+        #     _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
+        #     _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
+        #     _affNormFeaturesDict, _unaffNormFeaturesDict
+        # )
+        # phaseRBLower_Aff, phaseRBLower_UnAff = self.extract_phaseDF(
+        #     _RB_LowerDF,
+        #     _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
+        #     _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
+        #     _affNormFeaturesDict, _unaffNormFeaturesDict
+        # )
         phasePatDS_Aff, phasePatDS_UnAff = self.extract_phaseDF(
             _patDS,
             _tGaitLowerAff_Patient, _tGaitLowerUnAff_Patient,
@@ -298,17 +298,17 @@ class gaitphase_rawfeatures:
         mergedUpperSD.loc['initialContact'] = 0
         mergedLowerCI.loc['initialContact'] = 0
         mergedUpperCI.loc['initialContact'] = 0
-
-        mergedLowerSD.loc['SwingWidth'] = 1 - mergedLowerSD.loc['endOfPreswing']
-        mergedUpperSD.loc['SwingWidth'] = 1 - mergedUpperSD.loc['endOfPreswing']
-        mergedLowerCI.loc['SwingWidth'] = 1 - mergedLowerCI.loc['endOfPreswing']
-        mergedUpperCI.loc['SwingWidth'] = 1 - mergedUpperCI.loc['endOfPreswing']
+        
+        mergedLowerSD.loc['SwingWidth'] = 1 - mergedUpperSD.at['endOfPreswing', 'Upper-S.D']
+        mergedUpperSD.loc['SwingWidth'] = 1 - mergedLowerSD.at['endOfPreswing', 'Lower-S.D']
+        mergedLowerCI.loc['SwingWidth'] = 1 - mergedUpperCI.at['endOfPreswing', 'Upper-CI']
+        mergedUpperCI.loc['SwingWidth'] = 1 - mergedLowerCI.at['endOfPreswing', 'Lower-CI']
 
         mergedLowerSD = mergedLowerSD.rename(columns={'Lower-S.D': ''})
         mergedUpperSD = mergedUpperSD.rename(columns={'Upper-S.D': ''})
         mergedLowerCI = mergedLowerSD.rename(columns={'Lower-CI': ''})
         mergedUpperCI = mergedUpperSD.rename(columns={'Upper-CI': ''})
-        # print()
+       
         return mergedLowerSD, mergedUpperSD, mergedLowerCI, mergedUpperCI
 
 

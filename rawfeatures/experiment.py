@@ -166,7 +166,7 @@ for patientID, trialObjects in patient_trials_dict.items():
                     idx, patRB_group, stridePairID,
                     _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
                 )
-                # print(stride.initialize_hMetadata)
+                print(stride.initialize_hMetadata)
                 stride_RB_check = stride.within_RB_check(stride.StatsDF,stride.RBStatsDF)
                 # print(stride_RB_check)
                 # sys.exit()
@@ -183,31 +183,25 @@ for patientID, trialObjects in patient_trials_dict.items():
                 stance_upper = stance.get_hUpperMetadata("initialContact", "endOfPreswing")
                 stance_lower = stance.get_hLowerMetadata("initialContact", "endOfPreswing")
                 p_stance = stance.Metadata
-                # print(p_stance)
-                # print(stance_upper)
-                # print(stance_lower)
+                
                 stance_is_in = ((p_stance >= stance_lower) & (p_stance <= stance_upper))
                 stance_is_in = (~stance_is_in).astype(int)
-                print(stance_is_in)
-
+                
                 # Swing phase
                 print('Swing phase:')
                 swing = extract_gaitphase_rawfeatures(
                     idx, patRB_group, stridePairID,
                     _phaseStart="endOfPreswing", _phaseEnd="endOfTerminalSwing"
                 )
-
                 swing_RB_check = swing.within_RB_check(swing.StatsDF,swing.RBStatsDF)
                 
                 swing_upper = swing.get_hUpperMetadata("endOfPreswing", "endOfTerminalSwing")
                 swing_lower = swing.get_hLowerMetadata("endOfPreswing", "endOfTerminalSwing")
                 p_swing = swing.Metadata
-                print(p_swing)
-                print(swing_upper)
-                print(swing_lower)
+                
                 swing_is_in = ((p_swing >= swing_lower) & (p_swing <= swing_upper))
                 swing_is_in = (~swing_is_in).astype(int)
-                print(swing_is_in)
+                
                 sys.exit()
                                
 
