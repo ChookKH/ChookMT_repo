@@ -180,7 +180,6 @@ for patientID, trialObjects in patient_trials_dict.items():
                 print(stride.AffDF)
                 stride_Aff_RB_check = stride.within_RB_check(stride.AffDF, stride_h_kine) 
                 print(stride_Aff_RB_check)               
-                # sys.exit()
 
                 # Stance phase
                 print('Stance phase:')
@@ -233,7 +232,7 @@ for patientID, trialObjects in patient_trials_dict.items():
                 swing_is_in = ((p_swing >= swing_lower) & (p_swing <= swing_upper))
                 swing_is_in = (~swing_is_in).astype(int)
                 
-                sys.exit()
+                # sys.exit()
                                
 
 # If the trial has no common pair at all due to all data being faulty

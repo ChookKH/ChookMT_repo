@@ -172,26 +172,6 @@ class gaitphase_rawfeatures:
             _affNormFeaturesDict.pop('%time')
 
 
-        # # === === === ===
-        # # Partitioning the reference bands and patient's curves accordingly
-        # phaseRBMean_Aff, phaseRBMean_UnAff = self.extract_phaseDF(
-        #     _RB_MeanDF,
-        #     _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
-        #     _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
-        #     _affNormFeaturesDict, _unaffNormFeaturesDict
-        # )
-        # phaseRBUpper_Aff, phaseRBUpper_UnAff = self.extract_phaseDF(
-        #     _RB_UpperDF,
-        #     _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
-        #     _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
-        #     _affNormFeaturesDict, _unaffNormFeaturesDict
-        # )
-        # phaseRBLower_Aff, phaseRBLower_UnAff = self.extract_phaseDF(
-        #     _RB_LowerDF,
-        #     _tGaitLowerAff_RB, _tGaitLowerUnAff_RB,
-        #     _tGaitUpperAff_RB, _tGaitUpperUnAff_RB,
-        #     _affNormFeaturesDict, _unaffNormFeaturesDict
-        # )
         phasePatDS_Aff, phasePatDS_UnAff = self.extract_phaseDF(
             _patDS,
             _tGaitLowerAff_Patient, _tGaitLowerUnAff_Patient,
@@ -224,26 +204,6 @@ class gaitphase_rawfeatures:
         # Seperate the Aff side
         StatsDFLength = len(self.StatsDF) // 2
         self.AffDF = self.StatsDF[:StatsDFLength]
-        
-        # Patient and reference bands deviation stats
-        # -------------------------------------------
-        # The stats of the reference bands are defined as the following:
-        # Min : Minimum of the lower confidence interval boundary
-        # Median : Median of mean line in the confidence interval
-        # Max : Maximum of the upper confidence interval boundary
-        # self.RBStatsDF = self.extract_rb_stats(
-        #     phaseRBLower_Aff, phaseRBMean_Aff, phaseRBUpper_Aff,
-        #     phaseRBLower_UnAff, phaseRBMean_UnAff, phaseRBUpper_UnAff
-        # )
-        
-        # print(self.RBStatsDF)
-
-        # === === === ===
-        # Update 18.03.2023 (Chook)
-        # -----------------
-        # Added a boolean conversion for dataframe comparison between StatsDF and RBStatsDF
-        # self.BoolStatsDF = self.StatsDF.le(self.RBStatsDF).astype(float)
-        # print(self.BoolStatsDF)
         
 
         # === === === ===
@@ -282,15 +242,6 @@ class gaitphase_rawfeatures:
         
         output_df = ~output_df
         output_df = output_df.astype(int)
-
-        # min_comparison = pat_df['Min'] > rb_df['Min']
-        # median_comparison = (pat_df['Median'] >= rb_df['Min']) & (pat_df['Median'] <= rb_df['Max'])
-        # max_comparison = pat_df['Max'] < rb_df['Max']
-
-        # output_df = pd.DataFrame({'Min': min_comparison.astype(int),
-        #                'Median': median_comparison.astype(int),
-        #                'Max': max_comparison.astype(int)},
-        #               index=rb_df.index)
 
         return output_df 
 
