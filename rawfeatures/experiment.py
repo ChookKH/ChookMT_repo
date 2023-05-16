@@ -77,7 +77,7 @@ for patientID, trialObjects in patient_trials_dict.items():
         # -----------------
         # Create a instance of gaitphase_rawfeatures
         hData = healthy_data()
-
+        
         if not patRB_group.noCommonPairs:
         # If there is at least one common stride pair
 
@@ -166,9 +166,20 @@ for patientID, trialObjects in patient_trials_dict.items():
                     idx, patRB_group, stridePairID,
                     _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
                 )
-                print(stride.initialize_hMetadata)
-                stride_RB_check = stride.within_RB_check(stride.StatsDF,stride.RBStatsDF)
-                # print(stride_RB_check)
+                
+                # Stride healthy kinematic data
+                stride_h_kine = hData.intialize_hKinematics('Stride.dat')
+                print(stride_h_kine)
+
+                # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
+                stride.UnAffDF.index = stride.UnAffDF.index.str.replace('UnAff', '')
+                stride_UnAff_RB_check = stride.within_RB_check(stride.UnAffDF, stride_h_kine)
+
+                # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
+                stride.AffDF.index = stride.AffDF.index.str.replace('Aff', '')
+                print(stride.AffDF)
+                stride_Aff_RB_check = stride.within_RB_check(stride.AffDF, stride_h_kine) 
+                print(stride_Aff_RB_check)               
                 # sys.exit()
 
                 # Stance phase
@@ -178,8 +189,18 @@ for patientID, trialObjects in patient_trials_dict.items():
                     _phaseStart="initialContact", _phaseEnd="endOfPreswing"
                 )
 
-                stance_RB_check = stance.within_RB_check(stance.StatsDF,stance.RBStatsDF)
+                # Stance healthy kinematic data
+                stance_h_kine = hData.intialize_hKinematics('Stance.dat')
+
+                # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
+                stance.UnAffDF.index = stance.UnAffDF.index.str.replace('UnAff', '')
+                stance_UnAff_RB_check = stance.within_RB_check(stance.UnAffDF, stance_h_kine)
+
+                # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
+                stance.AffDF.index = stance.AffDF.index.str.replace('Aff', '')
+                stance_Aff_RB_check = stance.within_RB_check(stance.AffDF, stance_h_kine)
                 
+                # Upper and lower boundary of healthy metadata
                 stance_upper = stance.get_hUpperMetadata("initialContact", "endOfPreswing")
                 stance_lower = stance.get_hLowerMetadata("initialContact", "endOfPreswing")
                 p_stance = stance.Metadata
@@ -193,7 +214,17 @@ for patientID, trialObjects in patient_trials_dict.items():
                     idx, patRB_group, stridePairID,
                     _phaseStart="endOfPreswing", _phaseEnd="endOfTerminalSwing"
                 )
-                swing_RB_check = swing.within_RB_check(swing.StatsDF,swing.RBStatsDF)
+
+                # Swing healthy kinematic data
+                swing_h_kine = hData.intialize_hKinematics('Swing.dat')
+
+                # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
+                swing.UnAffDF.index = swing.UnAffDF.index.str.replace('UnAff', '')
+                swing_UnAff_RB_check = swing.within_RB_check(swing.UnAffDF, swing_h_kine)
+
+                # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
+                swing.AffDF.index = swing.AffDF.index.str.replace('Aff', '')
+                swing_Aff_RB_check = swing.within_RB_check(swing.AffDF, swing_h_kine)
                 
                 swing_upper = swing.get_hUpperMetadata("endOfPreswing", "endOfTerminalSwing")
                 swing_lower = swing.get_hLowerMetadata("endOfPreswing", "endOfTerminalSwing")
