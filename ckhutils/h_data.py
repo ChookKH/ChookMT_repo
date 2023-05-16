@@ -1,5 +1,5 @@
 import pandas as pd
-import os,io
+import os,io, zipfile
 
 class healthy_data:
 
@@ -32,3 +32,32 @@ class healthy_data:
         gait_phases = h_df.iloc[18:, :]
 
         return gait_events, gait_parameters, gait_phases
+    
+    def intialize_hKinematics(self, fileName):
+        '''
+        Extract kinematic data of healthy subjects 
+        '''
+        # Connect current directory to zip file location
+        zip_path = os.path.join(os.pardir, 'testSubjectsCollective.zip')
+
+        # Read .dat files and assign headers
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            for filename in zip_ref.namelist():
+                if filename.endswith('.dat') and filename == fileName:
+                    with zip_ref.open(filename) as file:
+                        for line in file:
+                            kineDF = pd.read_csv(file, sep=' ', index_col=0, header=None)   
+                            kineDF.index.name = 'Stats'
+
+                            # For InCnt.dat
+                            if kineDF.shape[1] == 1:
+                                kineDF.columns = ['Measurement']
+
+                            # For the remaining .dat files
+                            if kineDF.shape[1] == 3:    
+                                kineDF.columns = ['Min', 'Median', 'Max']
+
+                            return(kineDF)
+
+                           
+
