@@ -13,7 +13,6 @@ class healthy_data:
         Extract healthy gait event durations, parameter and phases
         '''
         # Read .dat file
-        cwd = os.getcwd()
         current_dir = os.getcwd()
         newRefband = os.path.join(
             current_dir, '..', 'refBand', 
@@ -33,6 +32,7 @@ class healthy_data:
 
         return gait_events, gait_parameters, gait_phases
     
+
     def intialize_hKinematics(self, fileName):
         '''
         Extract kinematic data of healthy subjects 
@@ -58,6 +58,53 @@ class healthy_data:
                                 kineDF.columns = ['Min', 'Median', 'Max']
 
                             return(kineDF)
+                        
 
-                           
+    def unravel(self, dataFrame):
+        '''
+        Unravel the 3 min, median and max columns into 1 column
+        '''
+        # Reset the indexing
+        dataFrame.reset_index(inplace=True)
 
+        # Split the column names using '__' as a seperator
+        dataFrame.columns = dataFrame.columns.str.split('__', expand=True)
+
+        # Stack the df from columns to rows
+        dataFrame = dataFrame.set_index('OriIndex').stack().reset_index()
+
+        # Merge 
+        dataFrame['OriIndex'] = dataFrame['OriIndex'] + '__' + dataFrame['level_1']
+        dataFrame = dataFrame.rename(columns={0: 'Status'})[['OriIndex', 'Status']].set_index('OriIndex') 
+
+        return dataFrame
+    
+    def export_data(self, subFolder, datFileName, dataframe):
+        '''
+        Export data into subfolders according to stride pair id
+        '''
+        # Get the current working directory
+        currentDir = os.getcwd()
+
+        # Go one level up to the parent directory
+        parentDir = os.path.abspath(os.path.join(currentDir, os.pardir))
+
+        # Specify the path to the ckhExportedData folder
+        exportedDir = os.path.join(parentDir, 'ckhExportedData')
+
+        # Creating subfolder name
+        subfolderName = subFolder
+
+        # Create the subfolder within the exportedData directory
+        subfolder_path = os.path.join(exportedDir, subfolderName)
+        if os.path.isdir(subfolder_path):
+            pass
+        else:
+            os.makedirs(subfolder_path)
+
+        # Specify the file name and path within the subfolder
+        file_name = datFileName
+        file_path = os.path.join(subfolder_path, file_name)
+
+        # Save DataFrame as .dat file
+        dataframe.to_csv(file_path, sep=' ', index=True)

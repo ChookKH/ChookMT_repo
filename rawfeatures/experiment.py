@@ -51,10 +51,10 @@ patient_trials_dict = map_patients_trials(patients, trials)
 # === === === ===
 # Extracting features
 for patientID, trialObjects in patient_trials_dict.items():
-    print(f"=========================\nDealing with {patientID}\n---")
+    # print(f"=========================\nDealing with {patientID}\n---")
 
     for t in trialObjects:
-        print(f" - {t.TrialID} ... ")
+        # print(f" - {t.TrialID} ... ")
 
         # Grouping the patient's trial data and reference band together
         patRB_group = patient_refband_grouping(
@@ -102,7 +102,7 @@ for patientID, trialObjects in patient_trials_dict.items():
 
                 stridePairID = ('_').join(strideID_Aff.split('_')[0:-2])
                 stridePairID = stridePairID + f"_A{ID_Aff}_" + f"U{ID_UnAff}"
-                print(f"    > Stride pair : {stridePairID}")
+                # print(f"    > Stride pair : {stridePairID}")
 
 
                 # === === === ===
@@ -161,7 +161,7 @@ for patientID, trialObjects in patient_trials_dict.items():
                 # Extracting the features, per pair of patient's stride data
                 # === === === ===
                 # Entire stride
-                print('Entire stride:')
+                # print('Entire stride:')
                 stride = extract_gaitphase_rawfeatures(
                     idx, patRB_group, stridePairID,
                     _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
@@ -169,20 +169,63 @@ for patientID, trialObjects in patient_trials_dict.items():
                 
                 # Stride healthy kinematic data
                 stride_h_kine = hData.intialize_hKinematics('Stride.dat')
-                print(stride_h_kine)
+
+                ### To ignore warning
+                pd.options.mode.chained_assignment = None
+                
+                # To retain the original indexing of UnAff and Aff
+                stride.UnAffDF = pd.concat(
+                    [
+                        stride.UnAffDF, 
+                        pd.DataFrame(
+                            data=list(stride.UnAffDF.index),
+                            columns=["OriIndex"], index=stride.UnAffDF.index
+                        )
+                    ], axis=1
+                )
+                stride.AffDF = pd.concat(
+                    [
+                        stride.AffDF, 
+                        pd.DataFrame(
+                            data=list(stride.AffDF.index), 
+                            columns=["OriIndex"], index=stride.AffDF.index
+                        )
+                    ], axis=1
+                )
 
                 # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
                 stride.UnAffDF.index = stride.UnAffDF.index.str.replace('UnAff', '')
                 stride_UnAff_RB_check = stride.within_RB_check(stride.UnAffDF, stride_h_kine)
+                stride_UnAff_RB_check.index = stride.UnAffDF.loc[:,'OriIndex'] 
 
                 # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
                 stride.AffDF.index = stride.AffDF.index.str.replace('Aff', '')
-                print(stride.AffDF)
-                stride_Aff_RB_check = stride.within_RB_check(stride.AffDF, stride_h_kine) 
-                print(stride_Aff_RB_check)               
+                stride_Aff_RB_check = stride.within_RB_check(stride.AffDF, stride_h_kine)
+                stride_Aff_RB_check.index = stride.AffDF.loc[:,'OriIndex']
 
+                # Upper and lower boundary of healthy metadata
+                stride_upper = stride.get_hUpperMetadata("initialContact", "endOfTerminalSwing")
+                stride_lower = stride.get_hLowerMetadata("initialContact", "endOfTerminalSwing")
+                p_stride = stride.Metadata
+
+                stride_is_in = ((p_stride >= stride_lower) & (p_stride <= stride_upper))
+                stride_is_in = (~stride_is_in).astype(int)
+
+                # Unravel into one column
+                stride_Aff_RB_check = hData.unravel(stride_Aff_RB_check)
+                stride_UnAff_RB_check = hData.unravel(stride_UnAff_RB_check)
+
+                # Merge df  
+                strideMerged = pd.concat([stride_is_in, stride_Aff_RB_check, stride_UnAff_RB_check], axis=0)
+                strideMerged.columns = ['Series', 'Status']
+                strideMerged = strideMerged.stack().reset_index(level=1, drop=True)
+                # print(strideMerged)
+
+                hData.export_data(stridePairID, 'Stride.dat', strideMerged)
+
+                # sys.exit()
                 # Stance phase
-                print('Stance phase:')
+                # print('Stance phase:')
                 stance = extract_gaitphase_rawfeatures(
                     idx, patRB_group, stridePairID,
                     _phaseStart="initialContact", _phaseEnd="endOfPreswing"
@@ -191,13 +234,19 @@ for patientID, trialObjects in patient_trials_dict.items():
                 # Stance healthy kinematic data
                 stance_h_kine = hData.intialize_hKinematics('Stance.dat')
 
+                # To retain the original indexing of UnAff and Aff
+                stance.UnAffDF['OriIndex'] = stance.UnAffDF.index
+                stance.AffDF['OriIndex'] = stance.AffDF.index                
+
                 # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
                 stance.UnAffDF.index = stance.UnAffDF.index.str.replace('UnAff', '')
                 stance_UnAff_RB_check = stance.within_RB_check(stance.UnAffDF, stance_h_kine)
+                stance_UnAff_RB_check.index = stance.UnAffDF['OriIndex']
 
                 # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
                 stance.AffDF.index = stance.AffDF.index.str.replace('Aff', '')
                 stance_Aff_RB_check = stance.within_RB_check(stance.AffDF, stance_h_kine)
+                stance_Aff_RB_check.index = stance.AffDF['OriIndex']
                 
                 # Upper and lower boundary of healthy metadata
                 stance_upper = stance.get_hUpperMetadata("initialContact", "endOfPreswing")
@@ -206,9 +255,22 @@ for patientID, trialObjects in patient_trials_dict.items():
                 
                 stance_is_in = ((p_stance >= stance_lower) & (p_stance <= stance_upper))
                 stance_is_in = (~stance_is_in).astype(int)
+
+                # Unravel into one column
+                stance_Aff_RB_check = hData.unravel(stance_Aff_RB_check)
+                stance_UnAff_RB_check = hData.unravel(stance_UnAff_RB_check)                
                 
+                # Merge df  
+                stanceMerged = pd.concat([stance_is_in, stance_Aff_RB_check, stance_UnAff_RB_check], axis=0)
+                stanceMerged.columns = ['Series', 'Status']
+                stanceMerged = stanceMerged.stack().reset_index(level=1, drop=True)
+                # print(stanceMerged)
+
+                hData.export_data(stridePairID, 'Stance.dat', stanceMerged)
+
+                # sys.exit()                
                 # Swing phase
-                print('Swing phase:')
+                # print('Swing phase:')
                 swing = extract_gaitphase_rawfeatures(
                     idx, patRB_group, stridePairID,
                     _phaseStart="endOfPreswing", _phaseEnd="endOfTerminalSwing"
@@ -217,13 +279,19 @@ for patientID, trialObjects in patient_trials_dict.items():
                 # Swing healthy kinematic data
                 swing_h_kine = hData.intialize_hKinematics('Swing.dat')
 
+                # To retain the original indexing of UnAff and Aff
+                swing.UnAffDF['OriIndex'] = swing.UnAffDF.index
+                swing.AffDF['OriIndex'] = swing.AffDF.index
+
                 # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
                 swing.UnAffDF.index = swing.UnAffDF.index.str.replace('UnAff', '')
                 swing_UnAff_RB_check = swing.within_RB_check(swing.UnAffDF, swing_h_kine)
+                swing_UnAff_RB_check.index = swing.UnAffDF['OriIndex']
 
                 # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
                 swing.AffDF.index = swing.AffDF.index.str.replace('Aff', '')
                 swing_Aff_RB_check = swing.within_RB_check(swing.AffDF, swing_h_kine)
+                swing_Aff_RB_check.index = swing.AffDF['OriIndex']
                 
                 swing_upper = swing.get_hUpperMetadata("endOfPreswing", "endOfTerminalSwing")
                 swing_lower = swing.get_hLowerMetadata("endOfPreswing", "endOfTerminalSwing")
@@ -231,8 +299,19 @@ for patientID, trialObjects in patient_trials_dict.items():
                 
                 swing_is_in = ((p_swing >= swing_lower) & (p_swing <= swing_upper))
                 swing_is_in = (~swing_is_in).astype(int)
+
+                # Unravel into one column
+                swing_Aff_RB_check = hData.unravel(swing_Aff_RB_check)
+                swing_UnAff_RB_check = hData.unravel(swing_UnAff_RB_check)
+
+                # Merge df  
+                swingMerged = pd.concat([swing_is_in, swing_Aff_RB_check, swing_UnAff_RB_check], axis=0)
+                swingMerged.columns = ['Series', 'Status']
+                swingMerged = swingMerged.stack().reset_index(level=1, drop=True)
+                # print(swingMerged)
                 
-                sys.exit()
+                hData.export_data(stridePairID, 'Swing.dat', swingMerged)
+                # sys.exit()
                                
 
 # If the trial has no common pair at all due to all data being faulty

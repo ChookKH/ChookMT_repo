@@ -242,6 +242,7 @@ class gaitphase_rawfeatures:
         
         output_df = ~output_df
         output_df = output_df.astype(int)
+        output_df.columns = ['Min', 'Median', 'Max']
 
         return output_df 
 
@@ -271,6 +272,11 @@ class gaitphase_rawfeatures:
         mergedUpperSD.loc['initialContact'] = 0
         mergedLowerCI.loc['initialContact'] = 0
         mergedUpperCI.loc['initialContact'] = 0
+
+        mergedLowerSD.loc['StrideWidth'] = 1
+        mergedUpperSD.loc['StrideWidth'] = 1
+        mergedLowerCI.loc['StrideWidth'] = 1
+        mergedUpperCI.loc['StrideWidth'] = 1
         
         mergedLowerSD.loc['SwingWidth'] = 1 - mergedUpperSD.at['endOfPreswing', 'Upper-S.D']
         mergedUpperSD.loc['SwingWidth'] = 1 - mergedLowerSD.at['endOfPreswing', 'Lower-S.D']
@@ -281,7 +287,7 @@ class gaitphase_rawfeatures:
         mergedUpperSD = mergedUpperSD.rename(columns={'Upper-S.D': ''})
         mergedLowerCI = mergedLowerSD.rename(columns={'Lower-CI': ''})
         mergedUpperCI = mergedUpperSD.rename(columns={'Upper-CI': ''})
-       
+        
         return mergedLowerSD, mergedUpperSD, mergedLowerCI, mergedUpperCI
 
 
@@ -304,15 +310,15 @@ class gaitphase_rawfeatures:
             if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
                 gw="SwingWidth"
 
-                h_upper_metadata = pd.Series(
-                    {
-                        "GaitWidth_Aff": self.UpperSD.loc[gw].values[0],
-                        "GaitStart_Aff": self.UpperSD.loc[_phaseStart].values[0],
-                        "GaitWidth_UnAff": self.UpperSD.loc[gw].values[0],
-                        "GaitStart_UnAff": self.UpperSD.loc[_phaseStart].values[0]
-                    }
-                )
-    
+            h_upper_metadata = pd.Series(
+                {
+                    "GaitWidth_Aff": self.UpperSD.loc[gw].values[0],
+                    "GaitStart_Aff": self.UpperSD.loc[_phaseStart].values[0],
+                    "GaitWidth_UnAff": self.UpperSD.loc[gw].values[0],
+                    "GaitStart_UnAff": self.UpperSD.loc[_phaseStart].values[0]
+                }
+            )
+        
         if sys.argv[3] == 'ci':
             # Entire stride
             if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
