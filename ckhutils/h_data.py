@@ -1,5 +1,5 @@
 import pandas as pd
-import os,io, zipfile
+import os, io, zipfile, sys
 
 class healthy_data:
 
@@ -89,22 +89,46 @@ class healthy_data:
         # Go one level up to the parent directory
         parentDir = os.path.abspath(os.path.join(currentDir, os.pardir))
 
-        # Specify the path to the ckhExportedData folder
-        exportedDir = os.path.join(parentDir, 'ckhExportedData')
+        if sys.argv[3] == 'std':
 
-        # Creating subfolder name
-        subfolderName = subFolder
+            # Specify the path to the ckhExportedData folder
+            exportedDir = os.path.join(parentDir, 'ckhExportedDataSTD')
 
-        # Create the subfolder within the exportedData directory
-        subfolder_path = os.path.join(exportedDir, subfolderName)
-        if os.path.isdir(subfolder_path):
-            pass
-        else:
-            os.makedirs(subfolder_path)
+            # Creating subfolder name
+            subfolderName = subFolder
 
-        # Specify the file name and path within the subfolder
-        file_name = datFileName
-        file_path = os.path.join(subfolder_path, file_name)
+            # Create the subfolder within the exportedData directory
+            subfolder_path = os.path.join(exportedDir, subfolderName)
+            if os.path.isdir(subfolder_path):
+                pass
+            else:
+                os.makedirs(subfolder_path)
 
-        # Save DataFrame as .dat file
-        dataframe.to_csv(file_path, sep=' ', index=True)
+            # Specify the file name and path within the subfolder
+            file_name = datFileName
+            file_path = os.path.join(subfolder_path, file_name)
+
+            # Save DataFrame as .dat file
+            dataframe.to_csv(file_path, sep=' ', index=True)
+
+        if sys.argv[3] == 'ci':
+
+            # Specify the path to the ckhExportedData folder
+            exportedDir = os.path.join(parentDir, 'ckhExportedDataCI')
+
+            # Creating subfolder name
+            subfolderName = subFolder
+
+            # Create the subfolder within the exportedData directory
+            subfolder_path = os.path.join(exportedDir, subfolderName)
+            if os.path.isdir(subfolder_path):
+                pass
+            else:
+                os.makedirs(subfolder_path)
+
+            # Specify the file name and path within the subfolder
+            file_name = datFileName
+            file_path = os.path.join(subfolder_path, file_name)
+
+            # Save DataFrame as .dat file
+            dataframe.to_csv(file_path, sep=' ', index=True)
