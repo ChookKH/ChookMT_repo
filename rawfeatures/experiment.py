@@ -132,32 +132,37 @@ for patientID, trialObjects in patient_trials_dict.items():
                 # Remove 'Aff' for series comparison
                 new_index = gpSeriesAff.index.str.replace('Aff', '')
                 gpSeriesAff = pd.Series(gpSeriesAff.values, index=new_index)
-                # print(gpSeriesAff)
 
 
-                # Gait parameter series (within refband check, within = 0, else = 1) 
+                # Gait parameter series (within refband check, within = 0, else = 1)
                 def check_within_limits(gpSeriesAff, lowerLimits, upperLimits):
+                    '''
+                    Compare Aff subject gait parameter series with healthy subjects
+                    '''
+                    withinCheck = pd.Series(
+                        
+                        np.where((gpSeriesAff >= lowerLimits) & (gpSeriesAff <= upperLimits), 0, 1
+                        ),index=gpSeriesAff.index, name='Result'
 
-                    withinCheck = (gpSeriesAff >= lowerLimits) & (gpSeriesAff <= upperLimits)
-                    withinCheck = pd.Series(np.where(withinCheck, 0, 1), index=withinCheck.index, name='Result')
+                        )
                     
                     return withinCheck
 
                 if sys.argv[3] == 'std':
                     # S.D check
-                    lowerParameterSD = hData.gait_par[['Measure', 'Lower-S.D']].set_index('Measure')
-                    upperParameterSD = hData.gait_par[['Measure', 'Upper-S.D']].set_index('Measure')
-                    withinSDCheck = check_within_limits(gpSeriesAff, lowerParameterSD['Lower-S.D'], upperParameterSD['Upper-S.D'])
-                    # print(withinSDCheck)
+                    parameterSD = hData.gait_par.set_index('Measure')
+                    withinSDCheck = check_within_limits(
+                        gpSeriesAff, parameterSD['Lower-S.D'], parameterSD['Upper-S.D']
+                        )
 
                 if sys.argv[3] == 'ci':
                     # CI check
-                    lowerParameterCI = hData.gait_par[['Measure', 'Lower-CI']].set_index('Measure')
-                    upperParameterCI = hData.gait_par[['Measure', 'Upper-CI']].set_index('Measure')
-                    withinCICheck = check_within_limits(gpSeriesAff, lowerParameterCI['Lower-CI'], upperParameterCI['Upper-CI'])
-                    # print(withinCICheck)
+                    parameterCI = hData.gait_par.set_index('Measure')
+                    withinCICheck = check_within_limits(
+                        gpSeriesAff, parameterCI['Lower-CI'], parameterCI['Upper-CI']
+                        )
 
-                
+
                 # Extracting the features, per pair of patient's stride data
                 # === === === ===
                 # Entire stride
@@ -169,9 +174,6 @@ for patientID, trialObjects in patient_trials_dict.items():
                 
                 # Stride healthy kinematic data
                 stride_h_kine = hData.intialize_hKinematics('Stride.dat')
-
-                ### To ignore warning
-                pd.options.mode.chained_assignment = None
                 
                 # To retain the original indexing of UnAff and Aff
                 stride.UnAffDF = pd.concat(
@@ -216,14 +218,15 @@ for patientID, trialObjects in patient_trials_dict.items():
                 stride_UnAff_RB_check = hData.unravel(stride_UnAff_RB_check)
 
                 # Merge df  
-                strideMerged = pd.concat([stride_is_in, stride_Aff_RB_check, stride_UnAff_RB_check], axis=0)
-                strideMerged.columns = ['Series', 'Status']
-                strideMerged = strideMerged.stack().reset_index(level=1, drop=True)
-                # print(strideMerged)
+                strideMerged = pd.concat(
+                    [
+                        stride_is_in, stride_Aff_RB_check, 
+                        stride_UnAff_RB_check
+                    ], axis=0).stack().reset_index(level=1, drop=True)
+                
+                # hData.export_data(stridePairID, 'Stride.dat', strideMerged)
 
-                hData.export_data(stridePairID, 'Stride.dat', strideMerged)
-
-                # sys.exit()
+                sys.exit()
                 # Stance phase
                 # print('Stance phase:')
                 stance = extract_gaitphase_rawfeatures(
@@ -233,6 +236,26 @@ for patientID, trialObjects in patient_trials_dict.items():
 
                 # Stance healthy kinematic data
                 stance_h_kine = hData.intialize_hKinematics('Stance.dat')
+
+                # To retain the original indexing of UnAff and Aff
+                stance.UnAffDF = pd.concat(
+                    [
+                        stance.UnAffDF, 
+                        pd.DataFrame(
+                            data=list(stance.UnAffDF.index),
+                            columns=["OriIndex"], index=stance.UnAffDF.index
+                        )
+                    ], axis=1
+                )
+                stance.AffDF = pd.concat(
+                    [
+                        stance.AffDF, 
+                        pd.DataFrame(
+                            data=list(stance.AffDF.index), 
+                            columns=["OriIndex"], index=stance.AffDF.index
+                        )
+                    ], axis=1
+                )
 
                 # To retain the original indexing of UnAff and Aff
                 stance.UnAffDF['OriIndex'] = stance.UnAffDF.index
@@ -278,6 +301,26 @@ for patientID, trialObjects in patient_trials_dict.items():
 
                 # Swing healthy kinematic data
                 swing_h_kine = hData.intialize_hKinematics('Swing.dat')
+
+                # To retain the original indexing of UnAff and Aff
+                swing.UnAffDF = pd.concat(
+                    [
+                        swing.UnAffDF, 
+                        pd.DataFrame(
+                            data=list(swing.UnAffDF.index),
+                            columns=["OriIndex"], index=swing.UnAffDF.index
+                        )
+                    ], axis=1
+                )
+                swing.AffDF = pd.concat(
+                    [
+                        swing.AffDF, 
+                        pd.DataFrame(
+                            data=list(swing.AffDF.index), 
+                            columns=["OriIndex"], index=swing.AffDF.index
+                        )
+                    ], axis=1
+                )
 
                 # To retain the original indexing of UnAff and Aff
                 swing.UnAffDF['OriIndex'] = swing.UnAffDF.index

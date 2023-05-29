@@ -252,42 +252,30 @@ class gaitphase_rawfeatures:
         (Implemented by Chook)
         Extract healthy gait stats
         '''
-        
-        lowerEventsSD = healthyData.gait_eve[['Measure', 'Lower-S.D']].set_index('Measure')
-        upperEventsSD = healthyData.gait_eve[['Measure', 'Upper-S.D']].set_index('Measure')
-        lowerEventsCI = healthyData.gait_eve[['Measure', 'Lower-CI']].set_index('Measure')
-        upperEventsCI = healthyData.gait_eve[['Measure', 'Upper-CI']].set_index('Measure')
+        events = healthyData.gait_eve.set_index('Measure')
+        phases = healthyData.gait_pha.set_index('Measure')
 
-        lowerPhaseSD = healthyData.gait_pha[['Measure', 'Lower-S.D']].set_index('Measure')
-        upperPhaseSD = healthyData.gait_pha[['Measure', 'Upper-S.D']].set_index('Measure')
-        lowerPhaseCI = healthyData.gait_pha[['Measure', 'Lower-CI']].set_index('Measure')
-        upperPhaseCI = healthyData.gait_pha[['Measure', 'Upper-CI']].set_index('Measure')
+        lowerSD = pd.concat([events[['Lower-S.D']], phases[['Lower-S.D']]], axis=0)/100
+        upperSD = pd.concat([events[['Upper-S.D']], phases[['Upper-S.D']]], axis=0)/100
+        lowerCI = pd.concat([events[['Lower-CI']], phases[['Lower-CI']]], axis=0)/100
+        upperCI = pd.concat([events[['Upper-CI']], phases[['Upper-CI']]], axis=0)/100
 
-        mergedLowerSD = pd.concat([lowerEventsSD, lowerPhaseSD], axis=0)/100
-        mergedUpperSD = pd.concat([upperEventsSD, upperPhaseSD], axis=0)/100
-        mergedLowerCI = pd.concat([lowerEventsCI, lowerPhaseCI], axis=0)/100
-        mergedUpperCI = pd.concat([upperEventsCI, upperPhaseCI], axis=0)/100
+        for df in [lowerSD, upperSD, lowerCI, upperCI]:
+            df.loc['initialContact'] = 0
+            df.loc['StrideWidth'] = 1
 
-        mergedLowerSD.loc['initialContact'] = 0
-        mergedUpperSD.loc['initialContact'] = 0
-        mergedLowerCI.loc['initialContact'] = 0
-        mergedUpperCI.loc['initialContact'] = 0
+        swingWidthDiff = 1 - upperSD.at['endOfPreswing', 'Upper-S.D']
 
-        mergedLowerSD.loc['StrideWidth'] = 1
-        mergedUpperSD.loc['StrideWidth'] = 1
-        mergedLowerCI.loc['StrideWidth'] = 1
-        mergedUpperCI.loc['StrideWidth'] = 1
-        
-        mergedLowerSD.loc['SwingWidth'] = 1 - mergedUpperSD.at['endOfPreswing', 'Upper-S.D']
-        mergedUpperSD.loc['SwingWidth'] = 1 - mergedLowerSD.at['endOfPreswing', 'Lower-S.D']
-        mergedLowerCI.loc['SwingWidth'] = 1 - mergedUpperCI.at['endOfPreswing', 'Upper-CI']
-        mergedUpperCI.loc['SwingWidth'] = 1 - mergedLowerCI.at['endOfPreswing', 'Lower-CI']
+        mergedLowerSD = lowerSD.rename(columns={'Lower-S.D': ''})
+        mergedUpperSD = upperSD.rename(columns={'Upper-S.D': ''})
+        mergedLowerCI = lowerCI.rename(columns={'Lower-CI': ''})
+        mergedUpperCI = upperCI.rename(columns={'Upper-CI': ''})
 
-        mergedLowerSD = mergedLowerSD.rename(columns={'Lower-S.D': ''})
-        mergedUpperSD = mergedUpperSD.rename(columns={'Upper-S.D': ''})
-        mergedLowerCI = mergedLowerSD.rename(columns={'Lower-CI': ''})
-        mergedUpperCI = mergedUpperSD.rename(columns={'Upper-CI': ''})
-        
+        mergedLowerSD.loc['SwingWidth'] = swingWidthDiff
+        mergedUpperSD.loc['SwingWidth'] = 1 - lowerSD.at['endOfPreswing', 'Lower-S.D']
+        mergedLowerCI.loc['SwingWidth'] = 1 - upperCI.at['endOfPreswing', 'Upper-CI']
+        mergedUpperCI.loc['SwingWidth'] = 1 - lowerCI.at['endOfPreswing', 'Lower-CI']
+
         return mergedLowerSD, mergedUpperSD, mergedLowerCI, mergedUpperCI
 
 
