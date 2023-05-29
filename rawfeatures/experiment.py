@@ -284,14 +284,15 @@ for patientID, trialObjects in patient_trials_dict.items():
                 stance_UnAff_RB_check = hData.unravel(stance_UnAff_RB_check)                
                 
                 # Merge df  
-                stanceMerged = pd.concat([stance_is_in, stance_Aff_RB_check, stance_UnAff_RB_check], axis=0)
-                stanceMerged.columns = ['Series', 'Status']
-                stanceMerged = stanceMerged.stack().reset_index(level=1, drop=True)
-                # print(stanceMerged)
+                stanceMerged = pd.concat(
+                    [
+                        stance_is_in, stance_Aff_RB_check, 
+                        stance_UnAff_RB_check
+                    ], axis=0).stack().reset_index(level=1, drop=True)
 
                 hData.export_data(stridePairID, 'Stance.dat', stanceMerged)
 
-                # sys.exit()                
+
                 # Swing phase
                 # print('Swing phase:')
                 swing = extract_gaitphase_rawfeatures(
@@ -348,10 +349,11 @@ for patientID, trialObjects in patient_trials_dict.items():
                 swing_UnAff_RB_check = hData.unravel(swing_UnAff_RB_check)
 
                 # Merge df  
-                swingMerged = pd.concat([swing_is_in, swing_Aff_RB_check, swing_UnAff_RB_check], axis=0)
-                swingMerged.columns = ['Series', 'Status']
-                swingMerged = swingMerged.stack().reset_index(level=1, drop=True)
-                # print(swingMerged)
+                swingMerged = pd.concat(
+                    [
+                        swing_is_in, swing_Aff_RB_check, 
+                        swing_UnAff_RB_check
+                    ], axis=0).stack().reset_index(level=1, drop=True)
                 
                 hData.export_data(stridePairID, 'Swing.dat', swingMerged)
                 # sys.exit()
