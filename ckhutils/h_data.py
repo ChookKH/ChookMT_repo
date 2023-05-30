@@ -1,5 +1,5 @@
 import pandas as pd
-import os, io, zipfile, sys
+import os, io, zipfile, sys, shutil
 
 class healthy_data:
 
@@ -64,21 +64,40 @@ class healthy_data:
         '''
         Unravel the 3 min, median and max columns into 1 column
         '''
-        # Reset the indexing
-        dataFrame.reset_index(inplace=True)
+        return (
+            dataFrame
 
-        # Split the column names using '__' as a seperator
-        dataFrame.columns = dataFrame.columns.str.split('__', expand=True)
+            # Reset the index, adding a new column 'index'
+            .reset_index()
 
-        # Stack the df from columns to rows
-        dataFrame = dataFrame.set_index('OriIndex').stack().reset_index()
+            # - Lambda function to split column names into a list (check if column name has __) 
+            # - No seperator (__) then return original name
+            .rename(columns=lambda x: x.split('__') if '__' in x else x)
 
-        # Merge 
-        dataFrame['OriIndex'] = dataFrame['OriIndex'] + '__' + dataFrame['level_1']
-        dataFrame = dataFrame.rename(columns={0: 'Status'})[['OriIndex', 'Status']].set_index('OriIndex') 
+            # - Reshape the dataframe from columns to rows
+            # - 'OriIndex' column kept as identifier
+            # - Remaining columns (min, median, max) considered as value variables
+            # - New 'variable' column = min, median, max
+            # - New 'value' column = numbers
+            .melt(id_vars='OriIndex', value_vars=dataFrame.columns)
 
-        return dataFrame
-    
+            # Remove any rows that are missing values
+            .dropna()
+
+            # - Create new column 'OriIndex' by concatenating 'OriIndex' column 
+            #   with 'variable' column, seperated by '__' 
+            .assign(OriIndex=lambda df: df['OriIndex'] + '__' + df['variable'])
+
+            # Rename 'value' column to 'Status'
+            .rename(columns={'value': 'Status'})
+
+            # Set 'OriIndex' as new index 
+            .set_index('OriIndex')
+
+            # Display only the 'Status' column from the dataframe, making it only 1 column
+            [['Status']]
+        )                        
+
     def export_data(self, subFolder, datFileName, dataframe):
         '''
         Export data into subfolders according to stride pair id
@@ -89,46 +108,21 @@ class healthy_data:
         # Go one level up to the parent directory
         parentDir = os.path.abspath(os.path.join(currentDir, os.pardir))
 
-        if sys.argv[3] == 'std':
+        # Specify the path to the ckhExportedData folder based on sys.argv[3]
+        exportedDir = os.path.join(parentDir, f"ckhExportedData{sys.argv[3].upper()}")
 
-            # Specify the path to the ckhExportedData folder
-            exportedDir = os.path.join(parentDir, 'ckhExportedDataSTD')
+        # Creating subfolder name
+        subfolderName = subFolder
 
-            # Creating subfolder name
-            subfolderName = subFolder
+        # Create the subfolder within the exportedData directory if it doesn't exist and overwrite
+        subfolder_path = os.path.join(exportedDir, subfolderName)
+        if os.path.exists(subfolder_path):
+            shutil.rmtree(subfolder_path)  
+        os.makedirs(subfolder_path)
 
-            # Create the subfolder within the exportedData directory
-            subfolder_path = os.path.join(exportedDir, subfolderName)
-            if os.path.isdir(subfolder_path):
-                pass
-            else:
-                os.makedirs(subfolder_path)
+        # Specify the file name and path within the subfolder
+        file_name = datFileName
+        file_path = os.path.join(subfolder_path, file_name)
 
-            # Specify the file name and path within the subfolder
-            file_name = datFileName
-            file_path = os.path.join(subfolder_path, file_name)
-
-            # Save DataFrame as .dat file
-            dataframe.to_csv(file_path, sep=' ', index=True)
-
-        if sys.argv[3] == 'ci':
-
-            # Specify the path to the ckhExportedData folder
-            exportedDir = os.path.join(parentDir, 'ckhExportedDataCI')
-
-            # Creating subfolder name
-            subfolderName = subFolder
-
-            # Create the subfolder within the exportedData directory
-            subfolder_path = os.path.join(exportedDir, subfolderName)
-            if os.path.isdir(subfolder_path):
-                pass
-            else:
-                os.makedirs(subfolder_path)
-
-            # Specify the file name and path within the subfolder
-            file_name = datFileName
-            file_path = os.path.join(subfolder_path, file_name)
-
-            # Save DataFrame as .dat file
-            dataframe.to_csv(file_path, sep=' ', index=True)
+        # Save DataFrame as .dat file
+        dataframe.to_csv(file_path, sep=' ', index=True)
