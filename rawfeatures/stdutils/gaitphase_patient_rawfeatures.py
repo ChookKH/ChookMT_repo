@@ -192,10 +192,15 @@ class gaitphase_rawfeatures:
         # Patient stats
         # -------------
         self.StatsDF = self.extract_patient_stats(phasePatDS_Aff, phasePatDS_UnAff)
-        self.StatsDF = self.StatsDF.drop(labels=['kneeJointUnAff_varus/adduction.q', 
-                                         'kneeJointAff_varus/adduction.q', 
-                                         'kneeJointUnAff_varus/adduction.qd', 
-                                         'kneeJointAff_varus/adduction.qd'])
+
+        self.StatsDF = self.StatsDF.drop(
+            labels=['kneeJointUnAff_varus/adduction.q', 
+                    'kneeJointAff_varus/adduction.q', 
+                    'kneeJointUnAff_varus/adduction.qd', 
+                    'kneeJointAff_varus/adduction.qd'
+            ]
+        )
+
         self.StatsDF = self.StatsDF.rename_axis('Stats')
 
         # Seperate the UnAff side
@@ -233,12 +238,20 @@ class gaitphase_rawfeatures:
         '''
         output_df = pd.DataFrame()
 
-        output_df['Min'] = ((pat_df['Min'] >= rb_df['Min']) &
-                            (pat_df['Min'] <= rb_df['Max']))
-        output_df['Median'] = ((pat_df['Median'] >= rb_df['Min']) & 
-                            (pat_df['Median'] <= rb_df['Max']))
-        output_df['Max'] = ((pat_df['Max'] >= rb_df['Min']) &
-                            (pat_df['Max'] <= rb_df['Max']))
+        output_df['Min'] = (
+            (pat_df['Min'] >= rb_df['Min']) & 
+            (pat_df['Min'] <= rb_df['Max'])
+        )
+
+        output_df['Median'] = (
+            (pat_df['Median'] >= rb_df['Min']) & 
+            (pat_df['Median'] <= rb_df['Max'])
+        )
+
+        output_df['Max'] = (
+            (pat_df['Max'] >= rb_df['Min']) &
+            (pat_df['Max'] <= rb_df['Max'])
+        )
         
         output_df = ~output_df
         output_df = output_df.astype(int)
@@ -283,52 +296,35 @@ class gaitphase_rawfeatures:
         '''
         Function to classify healthy subject gait width and gait start percentage
         '''
-        h_metadata = pd.Series({}, dtype=float)
+        h_upper_metadata = pd.Series({}, dtype=float)
 
         if sys.argv[3] == 'std':
-            # Entire stride
-            if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
-                gw="StrideWidth"
+            ci_or_std = self.UpperSD
 
-            # Stance phase
-            if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
-                gw="endOfPreswing"
-
-            # Swing phase
-            if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
-                gw="SwingWidth"
-
-            h_upper_metadata = pd.Series(
-                {
-                    "GaitWidth_Aff": self.UpperSD.loc[gw].values[0],
-                    "GaitStart_Aff": self.UpperSD.loc[_phaseStart].values[0],
-                    "GaitWidth_UnAff": self.UpperSD.loc[gw].values[0],
-                    "GaitStart_UnAff": self.UpperSD.loc[_phaseStart].values[0]
-                }
-            )
+        elif sys.argv[3] == 'ci':
+            ci_or_std = self.UpperCI
         
-        if sys.argv[3] == 'ci':
-            # Entire stride
-            if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
-                gw="StrideWidth"
+        # Entire stride
+        if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
+            gw="StrideWidth"
 
-            # Stance phase
-            if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
-                gw="endOfPreswing"
+        # Stance phase
+        elif _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
+            gw="endOfPreswing"
 
-            # Swing phase
-            if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
-                gw="SwingWidth"
+        # Swing phase
+        elif _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
+            gw="SwingWidth"
 
-            h_upper_metadata = pd.Series(
-                {
-                    "GaitWidth_Aff": self.UpperCI.loc[gw].values[0],
-                    "GaitStart_Aff": self.UpperCI.loc[_phaseStart].values[0],
-                    "GaitWidth_UnAff": self.UpperCI.loc[gw].values[0],
-                    "GaitStart_UnAff": self.UpperCI.loc[_phaseStart].values[0]
-                }
-            )
-
+        h_upper_metadata = pd.Series(
+            {
+                "GaitWidth_Aff": ci_or_std.loc[gw].values[0],
+                "GaitStart_Aff": ci_or_std.loc[_phaseStart].values[0],
+                "GaitWidth_UnAff": ci_or_std.loc[gw].values[0],
+                "GaitStart_UnAff": ci_or_std.loc[_phaseStart].values[0]
+            }
+        )
+        
         return h_upper_metadata
 
 
@@ -336,52 +332,34 @@ class gaitphase_rawfeatures:
         '''
         Function to classify healthy subject gait width and gait start percentage
         '''
-        h_metadata = pd.Series({}, dtype=float)
+        h_lower_metadata = pd.Series({}, dtype=float)
 
         if sys.argv[3] == 'std':
-            # Entire stride
-            if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
-                gw="StrideWidth"
+            ci_or_std = self.LowerSD
+        elif sys.argv[3] == 'ci':
+            ci_or_std = self.LowerCI
+        
+        # Entire stride
+        if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
+            gw="StrideWidth"
 
-            # Stance phase
-            if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
-                gw="endOfPreswing"
+        # Stance phase
+        elif _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
+            gw="endOfPreswing"
+            
+        # Swing phase
+        elif _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
+            gw="SwingWidth"
 
-            # Swing phase
-            if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
-                gw="SwingWidth"
-
-            h_lower_metadata = pd.Series(
-                {
-                    "GaitWidth_Aff": self.LowerSD.loc[gw].values[0],
-                    "GaitStart_Aff": self.LowerSD.loc[_phaseStart].values[0],
-                    "GaitWidth_UnAff": self.LowerSD.loc[gw].values[0],
-                    "GaitStart_UnAff": self.LowerSD.loc[_phaseStart].values[0]
-                }
-            )
-    
-        if sys.argv[3] == 'ci':
-            # Entire stride
-            if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
-                gw="StrideWidth"
-
-            # Stance phase
-            if _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
-                gw="endOfPreswing"
-
-            # Swing phase
-            if _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
-                gw="SwingWidth"
-
-            h_lower_metadata = pd.Series(
-                {
-                    "GaitWidth_Aff": self.LowerCI.loc[gw].values[0],
-                    "GaitStart_Aff": self.LowerCI.loc[_phaseStart].values[0],
-                    "GaitWidth_UnAff": self.LowerCI.loc[gw].values[0],
-                    "GaitStart_UnAff": self.LowerCI.loc[_phaseStart].values[0]
-                }
-            )
-
+        h_lower_metadata = pd.Series(
+            {
+                "GaitWidth_Aff": ci_or_std.loc[gw].values[0],
+                "GaitStart_Aff": ci_or_std.loc[_phaseStart].values[0],
+                "GaitWidth_UnAff": ci_or_std.loc[gw].values[0],
+                "GaitStart_UnAff": ci_or_std.loc[_phaseStart].values[0]
+            }
+        )
+        
         return h_lower_metadata
     
 

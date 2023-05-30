@@ -140,11 +140,11 @@ for patientID, trialObjects in patient_trials_dict.items():
                     Compare Aff subject gait parameter series with healthy subjects
                     '''
                     withinCheck = pd.Series(
-                        
-                        np.where((gpSeriesAff >= lowerLimits) & (gpSeriesAff <= upperLimits), 0, 1
+                        np.where(
+                            (gpSeriesAff >= lowerLimits) & (gpSeriesAff <= upperLimits), 
+                            0, 1
                         ),index=gpSeriesAff.index, name='Result'
-
-                        )
+                    )
                     
                     return withinCheck
 
@@ -163,200 +163,88 @@ for patientID, trialObjects in patient_trials_dict.items():
                         )
 
 
+                def process_phase(phaseStart, phaseEnd, filename):
+                    '''
+                    Process the phases to print out 1 or 0 and export .dat file 
+                    '''
+                    phase_data = extract_gaitphase_rawfeatures(
+                        idx, patRB_group, stridePairID, 
+                        _phaseStart=phaseStart, _phaseEnd=phaseEnd
+                    )
+
+                    # Initialize the kinematic data for healthy subject
+                    phase_h_kine = hData.intialize_hKinematics(filename)
+
+                    # Create a column OriIndex to retain original index
+                    phase_data.UnAffDF = pd.concat(
+                        [
+                            phase_data.UnAffDF, 
+                                pd.DataFrame(
+                                    data=list(phase_data.UnAffDF.index), 
+                                    columns=['OriIndex'], 
+                                    index=phase_data.UnAffDF.index
+                                )
+                        ], axis=1
+                    )
+
+                    phase_data.AffDF = pd.concat(
+                        [
+                            phase_data.AffDF, 
+                            pd.DataFrame(
+                                data=list(phase_data.AffDF.index), 
+                                columns=['OriIndex'], 
+                                index=phase_data.AffDF.index
+                            )
+                        ], axis=1
+                    )
+
+                    # Unaffected side of subject do within refband check (within=0, else=1) 
+                    phase_data.UnAffDF.index = phase_data.UnAffDF.index.str.replace('UnAff', '')
+                    phase_UnAff_RB_check = phase_data.within_RB_check(
+                        phase_data.UnAffDF, phase_h_kine
+                    )
+                    phase_UnAff_RB_check.index = phase_data.UnAffDF.loc[:, 'OriIndex']
+
+                    # Affected side of subject do within refband check (within=0, else=1)
+                    phase_data.AffDF.index = phase_data.AffDF.index.str.replace('Aff', '')
+                    phase_Aff_RB_check = phase_data.within_RB_check(
+                        phase_data.AffDF, phase_h_kine
+                    )
+                    phase_Aff_RB_check.index = phase_data.AffDF.loc[:, 'OriIndex']
+
+                    # Get healthy subject upper and lower boundary metadata
+                    phase_upper = phase_data.get_hUpperMetadata(phaseStart, phaseEnd)
+                    phase_lower = phase_data.get_hLowerMetadata(phaseStart, phaseEnd)
+                    pat_phase = phase_data.Metadata
+
+                    # Patient metadat of subject do is_in refband check (within=0, else=1)
+                    phase_is_in = ((pat_phase >= phase_lower) & (pat_phase <= phase_upper))
+                    phase_is_in = (~phase_is_in).astype(int)
+
+                    # Unravel m x 3 data into m x 1 dataframe
+                    phase_Aff_RB_check = hData.unravel(phase_Aff_RB_check)
+                    phase_UnAff_RB_check = hData.unravel(phase_UnAff_RB_check)
+
+                    phase_merged = pd.concat(
+                        [
+                            phase_is_in, 
+                            phase_Aff_RB_check, 
+                            phase_UnAff_RB_check
+                        ], axis=0
+                    ).stack().reset_index(level=1, drop=True)
+
+                    hData.export_data(stridePairID, filename, phase_merged)
+
                 # Extracting the features, per pair of patient's stride data
                 # === === === ===
                 # Entire stride
-                # print('Entire stride:')
-                stride = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
-                )
-                
-                # Stride healthy kinematic data
-                stride_h_kine = hData.intialize_hKinematics('Stride.dat')
-                
-                # To retain the original indexing of UnAff and Aff
-                stride.UnAffDF = pd.concat(
-                    [
-                        stride.UnAffDF, 
-                        pd.DataFrame(
-                            data=list(stride.UnAffDF.index),
-                            columns=["OriIndex"], index=stride.UnAffDF.index
-                        )
-                    ], axis=1
-                )
-                stride.AffDF = pd.concat(
-                    [
-                        stride.AffDF, 
-                        pd.DataFrame(
-                            data=list(stride.AffDF.index), 
-                            columns=["OriIndex"], index=stride.AffDF.index
-                        )
-                    ], axis=1
-                )
+                stride_phase = process_phase("initialContact", "endOfTerminalSwing", "Stride.dat")
 
-                # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
-                stride.UnAffDF.index = stride.UnAffDF.index.str.replace('UnAff', '')
-                stride_UnAff_RB_check = stride.within_RB_check(stride.UnAffDF, stride_h_kine)
-                stride_UnAff_RB_check.index = stride.UnAffDF.loc[:,'OriIndex'] 
-
-                # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
-                stride.AffDF.index = stride.AffDF.index.str.replace('Aff', '')
-                stride_Aff_RB_check = stride.within_RB_check(stride.AffDF, stride_h_kine)
-                stride_Aff_RB_check.index = stride.AffDF.loc[:,'OriIndex']
-
-                # Upper and lower boundary of healthy metadata
-                stride_upper = stride.get_hUpperMetadata("initialContact", "endOfTerminalSwing")
-                stride_lower = stride.get_hLowerMetadata("initialContact", "endOfTerminalSwing")
-                p_stride = stride.Metadata
-
-                stride_is_in = ((p_stride >= stride_lower) & (p_stride <= stride_upper))
-                stride_is_in = (~stride_is_in).astype(int)
-
-                # Unravel into one column
-                stride_Aff_RB_check = hData.unravel(stride_Aff_RB_check)
-                stride_UnAff_RB_check = hData.unravel(stride_UnAff_RB_check)
-
-                # Merge df  
-                strideMerged = pd.concat(
-                    [
-                        stride_is_in, stride_Aff_RB_check, 
-                        stride_UnAff_RB_check
-                    ], axis=0).stack().reset_index(level=1, drop=True)
-                
-                # hData.export_data(stridePairID, 'Stride.dat', strideMerged)
-
-                sys.exit()
                 # Stance phase
-                # print('Stance phase:')
-                stance = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="initialContact", _phaseEnd="endOfPreswing"
-                )
-
-                # Stance healthy kinematic data
-                stance_h_kine = hData.intialize_hKinematics('Stance.dat')
-
-                # To retain the original indexing of UnAff and Aff
-                stance.UnAffDF = pd.concat(
-                    [
-                        stance.UnAffDF, 
-                        pd.DataFrame(
-                            data=list(stance.UnAffDF.index),
-                            columns=["OriIndex"], index=stance.UnAffDF.index
-                        )
-                    ], axis=1
-                )
-                stance.AffDF = pd.concat(
-                    [
-                        stance.AffDF, 
-                        pd.DataFrame(
-                            data=list(stance.AffDF.index), 
-                            columns=["OriIndex"], index=stance.AffDF.index
-                        )
-                    ], axis=1
-                )
-
-                # To retain the original indexing of UnAff and Aff
-                stance.UnAffDF['OriIndex'] = stance.UnAffDF.index
-                stance.AffDF['OriIndex'] = stance.AffDF.index                
-
-                # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
-                stance.UnAffDF.index = stance.UnAffDF.index.str.replace('UnAff', '')
-                stance_UnAff_RB_check = stance.within_RB_check(stance.UnAffDF, stance_h_kine)
-                stance_UnAff_RB_check.index = stance.UnAffDF['OriIndex']
-
-                # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
-                stance.AffDF.index = stance.AffDF.index.str.replace('Aff', '')
-                stance_Aff_RB_check = stance.within_RB_check(stance.AffDF, stance_h_kine)
-                stance_Aff_RB_check.index = stance.AffDF['OriIndex']
-                
-                # Upper and lower boundary of healthy metadata
-                stance_upper = stance.get_hUpperMetadata("initialContact", "endOfPreswing")
-                stance_lower = stance.get_hLowerMetadata("initialContact", "endOfPreswing")
-                p_stance = stance.Metadata
-                
-                stance_is_in = ((p_stance >= stance_lower) & (p_stance <= stance_upper))
-                stance_is_in = (~stance_is_in).astype(int)
-
-                # Unravel into one column
-                stance_Aff_RB_check = hData.unravel(stance_Aff_RB_check)
-                stance_UnAff_RB_check = hData.unravel(stance_UnAff_RB_check)                
-                
-                # Merge df  
-                stanceMerged = pd.concat(
-                    [
-                        stance_is_in, stance_Aff_RB_check, 
-                        stance_UnAff_RB_check
-                    ], axis=0).stack().reset_index(level=1, drop=True)
-
-                hData.export_data(stridePairID, 'Stance.dat', stanceMerged)
-
+                stance_phase = process_phase("initialContact", "endOfPreswing", "Stance.dat")
 
                 # Swing phase
-                # print('Swing phase:')
-                swing = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfPreswing", _phaseEnd="endOfTerminalSwing"
-                )
-
-                # Swing healthy kinematic data
-                swing_h_kine = hData.intialize_hKinematics('Swing.dat')
-
-                # To retain the original indexing of UnAff and Aff
-                swing.UnAffDF = pd.concat(
-                    [
-                        swing.UnAffDF, 
-                        pd.DataFrame(
-                            data=list(swing.UnAffDF.index),
-                            columns=["OriIndex"], index=swing.UnAffDF.index
-                        )
-                    ], axis=1
-                )
-                swing.AffDF = pd.concat(
-                    [
-                        swing.AffDF, 
-                        pd.DataFrame(
-                            data=list(swing.AffDF.index), 
-                            columns=["OriIndex"], index=swing.AffDF.index
-                        )
-                    ], axis=1
-                )
-
-                # To retain the original indexing of UnAff and Aff
-                swing.UnAffDF['OriIndex'] = swing.UnAffDF.index
-                swing.AffDF['OriIndex'] = swing.AffDF.index
-
-                # Check UnAff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
-                swing.UnAffDF.index = swing.UnAffDF.index.str.replace('UnAff', '')
-                swing_UnAff_RB_check = swing.within_RB_check(swing.UnAffDF, swing_h_kine)
-                swing_UnAff_RB_check.index = swing.UnAffDF['OriIndex']
-
-                # Check Aff side of subject to healthy kinematic data within RefBand(within = 0, eles = 1)
-                swing.AffDF.index = swing.AffDF.index.str.replace('Aff', '')
-                swing_Aff_RB_check = swing.within_RB_check(swing.AffDF, swing_h_kine)
-                swing_Aff_RB_check.index = swing.AffDF['OriIndex']
-                
-                swing_upper = swing.get_hUpperMetadata("endOfPreswing", "endOfTerminalSwing")
-                swing_lower = swing.get_hLowerMetadata("endOfPreswing", "endOfTerminalSwing")
-                p_swing = swing.Metadata
-                
-                swing_is_in = ((p_swing >= swing_lower) & (p_swing <= swing_upper))
-                swing_is_in = (~swing_is_in).astype(int)
-
-                # Unravel into one column
-                swing_Aff_RB_check = hData.unravel(swing_Aff_RB_check)
-                swing_UnAff_RB_check = hData.unravel(swing_UnAff_RB_check)
-
-                # Merge df  
-                swingMerged = pd.concat(
-                    [
-                        swing_is_in, swing_Aff_RB_check, 
-                        swing_UnAff_RB_check
-                    ], axis=0).stack().reset_index(level=1, drop=True)
-                
-                hData.export_data(stridePairID, 'Swing.dat', swingMerged)
-                # sys.exit()
+                swing_phase = process_phase("endOfPreswing", "endOfTerminalSwing", "Swing.dat")
                                
 
 # If the trial has no common pair at all due to all data being faulty
