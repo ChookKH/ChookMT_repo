@@ -113,16 +113,22 @@ class healthy_data:
 
         # Creating subfolder name
         subfolderName = subFolder
-
+        
         # Create the subfolder within the exportedData directory if it doesn't exist and overwrite
-        subfolder_path = os.path.join(exportedDir, subfolderName)
-        if os.path.exists(subfolder_path):
-            shutil.rmtree(subfolder_path)  
-        os.makedirs(subfolder_path)
+        subfolder_path = os.path.join(exportedDir, subfolderName) 
+        if not os.path.exists(subfolder_path):
+            os.makedirs(subfolder_path)
 
         # Specify the file name and path within the subfolder
         file_name = datFileName
         file_path = os.path.join(subfolder_path, file_name)
 
+        # Check if the file already exists and delete it if it does
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    
         # Save DataFrame as .dat file
-        dataframe.to_csv(file_path, sep=' ', index=True)
+        if datFileName not in ['Stance.dat', 'Swing.dat', 'Stride.dat']:
+            dataframe.to_csv(file_path, sep=' ', index=True, header=False)
+        else:
+            dataframe.to_csv(file_path, sep=' ', index=True)
