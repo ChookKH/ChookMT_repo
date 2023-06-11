@@ -10,4 +10,4 @@ testSubjectsCollective.zip
 ckhExportedDataCI/*
 ckhExportedDataSTD/*
 datasets/*
-/rawfeatures/small_tests.py
+small_tests.py
