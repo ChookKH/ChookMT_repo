@@ -18,7 +18,7 @@ from process_gaitparameters import extract_gaitparameters
 from ckhutils.h_data import healthy_data
 
 # === === === ===
-# Sub routine
+# Subroutine
 # Gait parameter series (within refband check, within = 0, else = 1)
 def check_within_limits(gpSeries, lowerLimits, upperLimits):
     '''

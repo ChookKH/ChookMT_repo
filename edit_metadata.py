@@ -10,7 +10,7 @@ metadata folder if the user decides to rename the directory of the stored export
 '''
 
 # Appending the stdutils package path to sys.path
-sys.path.append(os.path.dirname(os.getcwd()))
+# sys.path.append(os.path.dirname(os.getcwd()))
 from stdutils.patient import Patient, Trial
 
 if len(sys.argv) < 3:
