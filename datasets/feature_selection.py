@@ -81,21 +81,19 @@ def get_weights(folderName, datFile):
     return sampleWeights
 
 # Save top features as a txt
-def save_feature_list(top_features, option, target_variable, comb):
+def save_feature_list(ensemble_name, option, target_variable, df):
     # Define the base directory for saving feature lists
-    base_dir = os.path.join('feature_list', option)
+    base_dir = os.path.join('feature_list', 'ensemble', ensemble_name)
     
     # Create directories if they don't exist
     os.makedirs(base_dir, exist_ok=True)
     
     # Define the file path using the comb input as the file name
-    file_name = f'{comb}.txt'
+    file_name = f'{ensemble_name}_{option}_{target_variable}.csv'
     file_path = os.path.join(base_dir, file_name)
     
-    # Save the top features as a text file
-    with open(file_path, 'w') as file:
-        for feature in top_features:
-            file.write(feature + '\n')
+    # Save the top features as a csv file
+    df.to_csv(file_path)
 
     print(f"Feature list saved successfully at: {file_path}")
 
@@ -203,11 +201,6 @@ if option in dataset_mapping:
 
     f_file_name = f'f_{option}_{target_variable}.csv'
 
-    # Save csv file
-    # mi_path = os.path.join(os.getcwd(), 'feature_list', mi_file_name)
-    # mi_score_df.to_csv(mi_path)
-    # f_path = os.path.join(os.getcwd(), 'feature_list', f_file_name)
-    # f_score_df.to_csv(f_path)
   
     # === === === ===
     # Call R csv files
@@ -227,7 +220,8 @@ if option in dataset_mapping:
     mean_df = pd.DataFrame({
         'Mean_Score': mean_scores
     }, index=mi_df.index)
-
+    
+    save_feature_list('mean', option, target_variable, mean_df)
     
     # === === === ===
     # Ensemble Reciprocal Ranking
@@ -247,44 +241,22 @@ if option in dataset_mapping:
                             r_df['Reciprocal_Rank_R'])
     
     # Create a DataFrame for reciprocal ranks
-    reciprocal_rank_df = pd.DataFrame({
+    reciprocal_df = pd.DataFrame({
         'Reciprocal_Rank': total_reciprocal_rank
     }, index=mi_df.index)
 
+    save_feature_list('reciprocal', option, target_variable, reciprocal_df)
 
-    # === === === ===
-    # Ensemble Condorcet
-    condorcet_scores = []
-    for feature in mi_df.index:
-        wins = sum([mi_df.loc[feature, 'x'] > f_df.loc[feature, 'x'],
-                    mi_df.loc[feature, 'x'] > r_df.loc[feature, 'x'],
-                    f_df.loc[feature, 'x'] > r_df.loc[feature, 'x']])
-        condorcet_scores.append(wins)
-
-    condorcet_df = pd.DataFrame({
-        'Condorcet_Score': condorcet_scores
-    }, index=mi_df.index)
-
-    print(condorcet_df)
 
     # === === === ===
     # Ensemble Borda Count
     borda_scores = mi_df['Rank_MI'] + f_df['Rank_F'] + r_df['Rank_R']
-    
+
     borda_df = pd.DataFrame({
         'Borda_Score': borda_scores
     }, index=mi_df.index)
 
-    # === === === ===
-    # Ensemble Bucklin
-    threshold_rank = 2  # Set your desired threshold rank (e.g., 2)
-    bucklin_scores = sum([mi_df['Rank_MI'] <= threshold_rank,
-                        f_df['Rank_F'] <= threshold_rank,
-                        r_df['Rank_R'] <= threshold_rank])
-    
-    bucklin_df = pd.DataFrame({
-        'Bucklin_Score': bucklin_scores
-    }, index=mi_df.index)
+    save_feature_list('borda', option, target_variable, borda_df)
 
 else:
     print("Invalid option. Use 'std' or 'liaw'.")
