@@ -9,6 +9,13 @@ small_tests.py
 testSubjectsCollective.zip
 ckhExportedDataCI/*
 ckhExportedDataSTD/*
-datasets/*
 small_tests.py
 R/*
+**/Datasets_CI/*
+**/Datasets_Liaw/*
+**/Datasets_SD/*
+**/feature_list/*
+**/R2_scores/*
+**/NN_models/*
+**/SK_models/*
+*.csv
