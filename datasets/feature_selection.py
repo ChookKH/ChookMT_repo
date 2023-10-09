@@ -221,7 +221,70 @@ if option in dataset_mapping:
     # === === === === 
     # Ensemble methods
     # Mean
+    mean_scores = (mi_df['x'] + f_df['x'] + r_df['x']) / 3
+
+    # Create a DataFrame for mean scores
+    mean_df = pd.DataFrame({
+        'Mean_Score': mean_scores
+    }, index=mi_df.index)
+
     
+    # === === === ===
+    # Ensemble Reciprocal Ranking
+    # Rank features using the three methods
+    mi_df['Rank_MI'] = mi_df['x'].rank()
+    f_df['Rank_F'] = f_df['x'].rank()
+    r_df['Rank_R'] = r_df['x'].rank()
+    
+    # Calculate reciprocal ranks
+    mi_df['Reciprocal_Rank_MI'] = 1 / mi_df['Rank_MI']
+    f_df['Reciprocal_Rank_F'] = 1 / f_df['Rank_F']
+    r_df['Reciprocal_Rank_R'] = 1 / r_df['Rank_R']
+    
+    # Calculate total reciprocal rank for each feature
+    total_reciprocal_rank = (mi_df['Reciprocal_Rank_MI'] +
+                            f_df['Reciprocal_Rank_F'] +
+                            r_df['Reciprocal_Rank_R'])
+    
+    # Create a DataFrame for reciprocal ranks
+    reciprocal_rank_df = pd.DataFrame({
+        'Reciprocal_Rank': total_reciprocal_rank
+    }, index=mi_df.index)
+
+
+    # === === === ===
+    # Ensemble Condorcet
+    condorcet_scores = []
+    for feature in mi_df.index:
+        wins = sum([mi_df.loc[feature, 'x'] > f_df.loc[feature, 'x'],
+                    mi_df.loc[feature, 'x'] > r_df.loc[feature, 'x'],
+                    f_df.loc[feature, 'x'] > r_df.loc[feature, 'x']])
+        condorcet_scores.append(wins)
+
+    condorcet_df = pd.DataFrame({
+        'Condorcet_Score': condorcet_scores
+    }, index=mi_df.index)
+
+    print(condorcet_df)
+
+    # === === === ===
+    # Ensemble Borda Count
+    borda_scores = mi_df['Rank_MI'] + f_df['Rank_F'] + r_df['Rank_R']
+    
+    borda_df = pd.DataFrame({
+        'Borda_Score': borda_scores
+    }, index=mi_df.index)
+
+    # === === === ===
+    # Ensemble Bucklin
+    threshold_rank = 2  # Set your desired threshold rank (e.g., 2)
+    bucklin_scores = sum([mi_df['Rank_MI'] <= threshold_rank,
+                        f_df['Rank_F'] <= threshold_rank,
+                        r_df['Rank_R'] <= threshold_rank])
+    
+    bucklin_df = pd.DataFrame({
+        'Bucklin_Score': bucklin_scores
+    }, index=mi_df.index)
 
 else:
     print("Invalid option. Use 'std' or 'liaw'.")
