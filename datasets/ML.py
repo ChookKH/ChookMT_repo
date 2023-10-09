@@ -264,15 +264,9 @@ if mode == 'NN':
         elif task == 'Train':
             # Xtrain 
             Xtrain_selected = np.array(XtrainDF_selected, np.float32)
-            # print(Xtrain_selected)
-            # print(Xtrain_selected.shape)
 
             # Xtest
             Xtest_selected = np.array(XtestDF_selected, np.float32)
-            # print(Xtest_selected)
-            # print(Xtest_selected.shape)   
-            # print(yTrain)
-            # print(yTrain.shape)
             
             # Train model with selected features
             grid_search.fit(Xtrain_selected, yTrain)
@@ -430,47 +424,41 @@ elif mode == 'SK':
 
                 elif task == 'Train':
                     # Construct the base folder path for feature_list
-                    feature_list_base_path = os.path.join(os.getcwd(), 'feature_list')
+                    feature_list_base_path = os.path.join(os.getcwd(), 'feature_list', 'ensemble')
 
-                    # Construct the folder path based on the input arguments
-                    folder_path = os.path.join(feature_list_base_path, option, target_variable)
+                    # Define the folder names for the three methods
+                    method_folders = ['borda', 'mean', 'reciprocal']
 
-                    # Construct the file names based on the task
-                    file_names = ['mean.txt', 
-                                  'random1.txt', 
-                                  'random2.txt', 
-                                  'stacking1.txt', 
-                                  'stacking2.txt', 
-                                  'voting.txt']
-                    
-                    # Load the content of the selected feature file
-                    for file_name in file_names:
-                        file_path = os.path.join(folder_path, file_name)
-                        
+                    # Load and train model for each method
+                    for method_folder in method_folders:
+                        file_name = f'{method_folder}_{option}_{target_variable}.csv'
+                        file_path = os.path.join(feature_list_base_path, method_folder, file_name)
+
                         # Check if the file exists
                         if os.path.exists(file_path):
-                            with open(file_path, 'r') as file:
-                                selected_features = file.read().splitlines()
-                            
-                            # Subset the training and test data based on selected features
-                            # Perform feature selection to match 10% sample size
+                            # Load the feature list from the CSV file
+                            selected_features_df = pd.read_csv(file_path, index_col=0)
+
+                            # Sort features based on scores in descending order and select top 100 features
                             num_features_to_keep = int(0.1 * len(yTrainCollection[target_variable]))
-                            XtrainDF_selected = XtrainDF[selected_features[:num_features_to_keep]]
-                            XtestDF_selected = XtestDF[selected_features[:num_features_to_keep]]
+                            sorted_features = selected_features_df['x'].sort_values(ascending=False)
+                            top_features = sorted_features.index[:num_features_to_keep]
+                            XtrainDF_selected = XtrainDF[top_features]
+                            XtestDF_selected = XtestDF[top_features]
 
                             # Train model with selected features
                             grid_search.fit(XtrainDF_selected, yTrain, sample_weight=weights)
-                            
+
                             # Predict using the trained model
                             y_pred = grid_search.predict(XtestDF_selected)
 
                             # R2 score
                             balance_score = r2_score(yTest, y_pred)
-                            print(f'{classifier_name} - {target_variable} score({file_name}) = {balance_score}')
+                            print(f'{classifier_name}({option}) - {target_variable} score({method_folder}) = {balance_score}')
                             print("Best parameters:", grid_search.best_params_) 
 
                         else:
-                            print("File not found.")
+                            print(f"File not found for method: {method_folder}")
                 else:
                     print("Invalid option. Use 'Save' or 'Load' or 'Train'.")
     else:

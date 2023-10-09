@@ -218,7 +218,7 @@ if option in dataset_mapping:
 
     # Create a DataFrame for mean scores
     mean_df = pd.DataFrame({
-        'Mean_Score': mean_scores
+        'x': mean_scores
     }, index=mi_df.index)
     
     save_feature_list('mean', option, target_variable, mean_df)
@@ -242,7 +242,7 @@ if option in dataset_mapping:
     
     # Create a DataFrame for reciprocal ranks
     reciprocal_df = pd.DataFrame({
-        'Reciprocal_Rank': total_reciprocal_rank
+        'x': total_reciprocal_rank
     }, index=mi_df.index)
 
     save_feature_list('reciprocal', option, target_variable, reciprocal_df)
@@ -253,7 +253,7 @@ if option in dataset_mapping:
     borda_scores = mi_df['Rank_MI'] + f_df['Rank_F'] + r_df['Rank_R']
 
     borda_df = pd.DataFrame({
-        'Borda_Score': borda_scores
+        'x': borda_scores
     }, index=mi_df.index)
 
     save_feature_list('borda', option, target_variable, borda_df)
