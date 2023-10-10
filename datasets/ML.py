@@ -203,12 +203,14 @@ if mode == 'NN':
         folder_path = os.path.join(feature_list_base_path, option, target_variable)
 
         # Construct the file names based on the task
-        file_names = ['mean.txt', 
-                        'random1.txt', 
-                        'random2.txt', 
-                        'stacking1.txt', 
-                        'stacking2.txt', 
-                        'voting.txt']
+        file_names = [
+            'mean.txt', 
+            'random1.txt', 
+            'random2.txt', 
+            'stacking1.txt', 
+            'stacking2.txt', 
+            'voting.txt'
+        ]
         
         # Load the content of the selected feature file
         for file_name in file_names:
@@ -309,37 +311,37 @@ elif mode == 'SK':
             }
         },
 
-        'RFR':{
-            'model': RandomForestRegressor(),
-            'params': {
-                'n_estimators': [50, 100, 500, 1000],
-                'random_state':[0]
-            }
-        },
+        # 'RFR':{
+        #     'model': RandomForestRegressor(),
+        #     'params': {
+        #         'n_estimators': [50, 100, 500, 1000],
+        #         'random_state':[0]
+        #     }
+        # },
 
-        'ABR':{
-            'model': AdaBoostRegressor(),
-            'params': {
-                'n_estimators': [50, 100, 500, 1000],
-                'random_state':[0]
-            }
-        },
+        # 'ABR':{
+        #     'model': AdaBoostRegressor(),
+        #     'params': {
+        #         'n_estimators': [50, 100, 500, 1000],
+        #         'random_state':[0]
+        #     }
+        # },
 
-        'BR':{
-            'model': BaggingRegressor(),
-            'params': {
-                'n_estimators': [50, 100, 500, 1000],
-                'random_state':[0]
-            }
-        },
+        # 'BR':{
+        #     'model': BaggingRegressor(),
+        #     'params': {
+        #         'n_estimators': [50, 100, 500, 1000],
+        #         'random_state':[0]
+        #     }
+        # },
 
-        'GBR':{
-            'model': GradientBoostingRegressor(),
-            'params': {
-                'n_estimators': [50, 100, 500, 1000],
-                'random_state':[0]
-            }
-        }
+        # 'GBR':{
+        #     'model': GradientBoostingRegressor(),
+        #     'params': {
+        #         'n_estimators': [50, 100, 500, 1000],
+        #         'random_state':[0]
+        #     }
+        # }
     }
     
     
