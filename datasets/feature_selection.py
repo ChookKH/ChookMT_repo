@@ -236,7 +236,7 @@ if option in dataset_mapping:
     r_df['Reciprocal_Rank_R'] = 1 / r_df['Rank_R']
     
     # Calculate total reciprocal rank for each feature
-    total_reciprocal_rank = (mi_df['Reciprocal_Rank_MI'] +
+    total_reciprocal_rank = 1 / (mi_df['Reciprocal_Rank_MI'] +
                             f_df['Reciprocal_Rank_F'] +
                             r_df['Reciprocal_Rank_R'])
     
