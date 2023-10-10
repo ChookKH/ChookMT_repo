@@ -19,4 +19,4 @@ R/*
 **/NN_models/*
 **/SK_models/*
 *.csv
-**/test.py
+datasets/test.py
