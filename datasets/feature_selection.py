@@ -88,7 +88,7 @@ def save_feature_list(ensemble_name, option, target_variable, df):
     # Create directories if they don't exist
     os.makedirs(base_dir, exist_ok=True)
     
-    # Define the file path using the comb input as the file name
+    # Define the file path and file name
     file_name = f'{ensemble_name}_{option}_{target_variable}.csv'
     file_path = os.path.join(base_dir, file_name)
     
