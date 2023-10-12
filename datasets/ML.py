@@ -73,6 +73,37 @@ def get_weights(folderName, datFile):
 
     return sampleWeights
 
+def save_y_pred(mode, option, method, y_test, y_pred):
+    '''
+    Concatenate ypred value to ytrue and save as csv
+    '''
+    # Create a DataFrame with y_pred and appropriate column name
+    y_pred_df = pd.DataFrame(
+        {f'{target_variable}': y_test,
+         f'pred{target_variable}': y_pred
+         }, index=y_test.index
+        )
+
+    # Define the base directory for saving R2 scores
+    base_dir = os.path.join('R2_scores')
+
+    # Define file name
+    file_name = f'{mode}{option.capitalize()}{method}.csv'
+    file_path = os.path.join(base_dir, file_name)
+    
+    if os.path.exists(file_path):
+        existing_df = pd.read_csv(file_path, index_col=0)
+    else:
+        existing_df = pd.DataFrame(index=y_test.index)
+
+    # Concatenate y_test with existing_df along columns
+    updated_df = pd.concat([existing_df, y_pred_df], axis=1)
+    
+    # Save updated_df with y_pred as CSV
+    updated_df.to_csv(file_path)
+
+    print(f'y_test with y_pred ({method}) saved successfully at: {file_path}')
+
 # Define weights
 weights = get_weights('Datasets_SD','TrainDataset_SD.dat')
 arm_weights = get_weights('Datasets_SD','ArmDataset_SD.dat')
@@ -429,38 +460,58 @@ elif mode == 'SK':
                     feature_list_base_path = os.path.join(os.getcwd(), 'feature_list', 'ensemble')
 
                     # Define the folder names for the three methods
-                    method_folders = ['borda', 'mean', 'reciprocal']
+                    method_folders = ['borda']
 
                     # Load and train model for each method
-                    for method_folder in method_folders:
-                        file_name = f'{method_folder}_{option}_{target_variable}.csv'
-                        file_path = os.path.join(feature_list_base_path, method_folder, file_name)
+                    file_name = f'borda_{option}_{target_variable}.csv'
+                    file_path = os.path.join(feature_list_base_path, 'borda', file_name)
 
-                        # Check if the file exists
-                        if os.path.exists(file_path):
-                            # Load the feature list from the CSV file
-                            selected_features_df = pd.read_csv(file_path, index_col=0)
+                    # Check if the file exists
+                    if os.path.exists(file_path):
+                        # Load the feature list from the CSV file
+                        selected_features_df = pd.read_csv(file_path, index_col=0)
 
-                            # Sort features based on scores in descending order and select top 100 features
-                            num_features_to_keep = int(0.1 * len(yTrainCollection[target_variable]))
-                            sorted_features = selected_features_df['x'].sort_values(ascending=False)
-                            top_features = sorted_features.index[:num_features_to_keep]
-                            XtrainDF_selected = XtrainDF[top_features]
-                            XtestDF_selected = XtestDF[top_features]
+                        # Sort features based on scores in descending order and select top 100 features
+                        num_features_to_keep = int(0.1 * len(yTrainCollection[target_variable]))
+                        sorted_features = selected_features_df['x'].sort_values(ascending=False)
+                        top_features = sorted_features.index[:num_features_to_keep]
+                        XtrainDF_selected = XtrainDF[top_features]
+                        XtestDF_selected = XtestDF[top_features]
 
-                            # Train model with selected features
-                            grid_search.fit(XtrainDF_selected, yTrain, sample_weight=weights)
+                        # Train model with selected features
+                        grid_search.fit(XtrainDF_selected, yTrain, sample_weight=weights)
 
-                            # Predict using the trained model
-                            y_pred = grid_search.predict(XtestDF_selected)
+                        # Predict using the trained model
+                        y_pred = grid_search.predict(XtestDF_selected)
 
-                            # R2 score
-                            balance_score = r2_score(yTest, y_pred)
-                            print(f'{classifier_name}({option}) - {target_variable} score({method_folder}) = {balance_score}')
-                            print("Best parameters:", grid_search.best_params_) 
+                        # Call the function to save y_test with appended y_pred column
+                        save_y_pred(mode, option, 'borda', yTest, y_pred)
+                        
+                        # R2 score
+                        # balance_score = r2_score(yTest, y_pred)
+                        # print(f'{classifier_name}({option}) - {target_variable} score(borda) = {balance_score}')
+                        # print("Best parameters:", grid_search.best_params_) 
 
-                        else:
-                            print(f"File not found for method: {method_folder}")
+                        # === === === ===
+                        # Folder to store all models
+                        # sk_models_folder = os.path.join(os.getcwd(), 'SK_models')
+                        # if not os.path.exists(sk_models_folder):
+                        #     os.makedirs(sk_models_folder)
+            
+                        # # Create folder for each dataset and classifier
+                        # folderName = os.path.join(sk_models_folder, f'SK_{dataset_info["folder"]}_{classifier_name}')
+                        # if not os.path.exists(folderName):
+                        #     os.makedirs(folderName)
+            
+                        # # Save the trained model using pickle
+                        # model_filename = f'{folderName}/{classifier_name}_{target_variable}_{method_folder}.pickle'
+                        # with open(model_filename, 'wb') as model_file:
+                        #     pickle.dump(grid_search.best_estimator_, model_file)
+            
+                        # print(f"Trained {classifier_name} model for {target_variable} saved as {model_filename}")
+    
+                    else:
+                        print(f"File not found for method: {method_folders}")
                 else:
                     print("Invalid option. Use 'Save' or 'Load' or 'Train'.")
     else:
