@@ -10,6 +10,17 @@ python .\feature_selection.py liaw Stability && `
 
 
 # === === === ===
+# CI dataset
+# === === === ===
+python .\feature_selection.py ci Trunk && `
+python .\feature_selection.py ci Leg && `
+python .\feature_selection.py ci Arm && `
+python .\feature_selection.py ci Speed && `
+python .\feature_selection.py ci Fluency && `
+python .\feature_selection.py ci Stability 
+
+
+# === === === ===
 # STD dataset
 # === === === ===
 python .\feature_selection.py std Trunk && `

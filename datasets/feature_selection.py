@@ -5,14 +5,10 @@ from sklearn.feature_selection import mutual_info_regression, f_regression
 
 # Check the command-line argument
 if len(sys.argv) != 3:
-    print('Usage: python .\feature_selection.py <std|liaw> <Trunk|Leg|Arm|Speed|Fluency|Stability>')
+    print('Usage: python .\feature_selection.py <std|ci|liaw> <Trunk|Leg|Arm|Speed|Fluency|Stability>')
     sys.exit()
 
 option = sys.argv[1]
-if option == 'ci':
-    print('No longer running ci test. PLease use std or liaw.')
-    sys.exit()
-
 target_variable = sys.argv[2]
 
 # Define the R folder name based on the option
@@ -21,7 +17,7 @@ if option.lower() == 'std':
 elif option.lower() == 'liaw':
     folder_name = 'ReliefFexpRank_Liaw'
 else:
-    print('Invalid option. Use "std" or "liaw".')
+    print('Invalid option. Use "std" or "ci" or "liaw".')
     sys.exit()
 
 # Get dataset
@@ -99,8 +95,8 @@ def save_feature_list(ensemble_name, option, target_variable, df):
 
 # Define weights
 weights = get_weights('Datasets_SD','TrainDataset_SD.dat')
-arm_weights = get_weights('Datasets_SD','ArmDataset_SD.dat')
-leg_weights = get_weights('Datasets_SD','LegDataset_SD.dat')
+arm_weights = get_weights('Datasets_SD','NewArmDataset_SD.dat')
+leg_weights = get_weights('Datasets_SD','NewLegDataset_SD.dat')
 
 
 # === === === ===
@@ -259,5 +255,5 @@ if option in dataset_mapping:
     save_feature_list('borda', option, target_variable, borda_df)
 
 else:
-    print("Invalid option. Use 'std' or 'liaw'.")
+    print("Invalid option. Use 'std' or 'ci' or 'liaw'.")
 
