@@ -14,6 +14,8 @@ target_variable = sys.argv[2]
 # Define the R folder name based on the option
 if option.lower() == 'std':
     folder_name = 'ReliefFexpRank_SD'
+elif option.lower() == 'ci':
+    folder_name = 'ReliefFexpRank_CI'
 elif option.lower() == 'liaw':
     folder_name = 'ReliefFexpRank_Liaw'
 else:
@@ -106,7 +108,7 @@ dataset_mapping = {
     {
         'folder': 'Datasets_SD',
         'test_file': 'TestDataset_SD.dat',
-        'train_file': 'TrainDataset_SD.dat',
+        'train_file': 'NewTrainDataset_SD.dat',
         'arm_file': 'NewArmDataset_SD.dat',
         'leg_file': 'NewLegDataset_SD.dat'
     },  
@@ -114,7 +116,7 @@ dataset_mapping = {
     {
         'folder': 'Datasets_CI',
         'test_file': 'TestDataset_CI.dat',
-        'train_file': 'TrainDataset_CI.dat',
+        'train_file': 'NewTrainDataset_CI.dat',
         'arm_file': 'NewArmDataset_CI.dat',
         'leg_file': 'NewLegDataset_CI.dat'
     },
@@ -122,7 +124,7 @@ dataset_mapping = {
     {
         'folder': 'Datasets_Liaw',
         'test_file': 'TestDataset_Liaw.dat',
-        'train_file': 'TrainDataset_Liaw.dat',
+        'train_file': 'NewTrainDataset_Liaw.dat',
         'arm_file': 'NewArmDataset_Liaw.dat',
         'leg_file': 'NewLegDataset_Liaw.dat'        
     }
