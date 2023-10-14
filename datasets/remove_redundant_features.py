@@ -3,12 +3,12 @@ import sys, os, io
 
 # Check the command-line argument
 if len(sys.argv) != 3:
-    print('Usage: python .\remove_redundant_features.py SD|Liaw Arm|Leg|Train')
+    print('Usage: python .\remove_redundant_features.py SD|CI|Liaw Arm|Leg|Train')
     sys.exit()
 
 # SD or Liaw dataset
 dataset_type = sys.argv[1]
-if dataset_type not in ['SD', 'Liaw']:
+if dataset_type not in ['SD', 'CI' ,'Liaw']:
     print("Invalid dataset type. Choose from 'Arm', 'Leg', 'Train'." )
     sys.exit()
 
