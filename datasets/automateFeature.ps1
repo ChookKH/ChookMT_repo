@@ -17,7 +17,7 @@ python .\feature_selection.py ci Leg && `
 python .\feature_selection.py ci Arm && `
 python .\feature_selection.py ci Speed && `
 python .\feature_selection.py ci Fluency && `
-python .\feature_selection.py ci Stability 
+python .\feature_selection.py ci Stability && `
 
 
 # === === === ===
