@@ -35,4 +35,11 @@ python .\ML.py std SK Leg Train && `
 python .\ML.py std SK Arm Train && `
 python .\ML.py std SK Speed Train && `
 python .\ML.py std SK Fluency Train && `
-python .\ML.py std SK Stability Train 
+python .\ML.py std SK Stability Train && `
+
+python .\ML.py ci SK Trunk Train && `
+python .\ML.py ci SK Leg Train && `
+python .\ML.py ci SK Arm Train && `
+python .\ML.py ci SK Speed Train && `
+python .\ML.py ci SK Fluency Train && `
+python .\ML.py ci SK Stability Train 

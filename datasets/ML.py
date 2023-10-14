@@ -12,7 +12,7 @@ from keras.wrappers.scikit_learn import KerasRegressor
 
 # Check the command-line argument
 if len(sys.argv) != 5:
-    print('Usage: python .\ML.py <std|liaw> <NN|SK> <Trunk|Leg|Arm|Speed|Fluency|Stability> <Save|Load|Train>')
+    print('Usage: python .\ML.py <std|ci|liaw> <NN|SK> <Trunk|Leg|Arm|Speed|Fluency|Stability> <Save|Load|Train>')
     sys.exit()
 
 option = sys.argv[1]
@@ -106,8 +106,8 @@ def save_y_pred(mode, option, method, y_test, y_pred):
 
 # Define weights
 weights = get_weights('Datasets_SD','TrainDataset_SD.dat')
-arm_weights = get_weights('Datasets_SD','ArmDataset_SD.dat')
-leg_weights = get_weights('Datasets_SD','LegDataset_SD.dat')
+arm_weights = get_weights('Datasets_SD','NewArmDataset_SD.dat')
+leg_weights = get_weights('Datasets_SD','NewLegDataset_SD.dat')
 
 
 # === === === ===
@@ -117,15 +117,23 @@ dataset_mapping = {
     {
         'folder': 'Datasets_SD',
         'test_file': 'TestDataset_SD.dat',
-        'train_file': 'TrainDataset_SD.dat',
+        'train_file': 'NewTrainDataset_SD.dat',
         'arm_file': 'NewArmDataset_SD.dat',
         'leg_file': 'NewLegDataset_SD.dat'
     },  
+    'ci': 
+    {
+        'folder': 'Datasets_CI',
+        'test_file': 'TestDataset_CI.dat',
+        'train_file': 'NewTrainDataset_CI.dat',
+        'arm_file': 'NewArmDataset_CI.dat',
+        'leg_file': 'NewLegDataset_CI.dat'
+    }, 
     'liaw': 
     {
         'folder': 'Datasets_Liaw',
         'test_file': 'TestDataset_Liaw.dat',
-        'train_file': 'TrainDataset_Liaw.dat',
+        'train_file': 'NewTrainDataset_Liaw.dat',
         'arm_file': 'NewArmDataset_Liaw.dat',
         'leg_file': 'NewLegDataset_Liaw.dat'        
     }
@@ -323,7 +331,7 @@ if mode == 'NN':
         else:
             print("Invalid option. Use 'Save' or 'Load' or 'Train'.")
     else:
-        print("Invalid option. Use 'std' or 'liaw'.")
+        print("Invalid option. Use 'std' or 'ci' or 'liaw'.")
 
 
 # === === === ===
@@ -488,9 +496,9 @@ elif mode == 'SK':
                         save_y_pred(mode, option, 'borda', yTest, y_pred)
                         
                         # R2 score
-                        # balance_score = r2_score(yTest, y_pred)
-                        # print(f'{classifier_name}({option}) - {target_variable} score(borda) = {balance_score}')
-                        # print("Best parameters:", grid_search.best_params_) 
+                        balance_score = r2_score(yTest, y_pred)
+                        print(f'{classifier_name}({option}) - {target_variable} score(borda) = {balance_score}')
+                        print("Best parameters:", grid_search.best_params_) 
 
                         # === === === ===
                         # Folder to store all models
@@ -515,6 +523,6 @@ elif mode == 'SK':
                 else:
                     print("Invalid option. Use 'Save' or 'Load' or 'Train'.")
     else:
-        print("Invalid option. Use 'std' or 'liaw'.")
+        print("Invalid option. Use 'std' or 'ci' or 'liaw'.")
 else:
     print("Invalid execution mode. Use 'NN' or 'SK'.")
