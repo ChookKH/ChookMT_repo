@@ -6,6 +6,7 @@ import pickle
 from sklearn import tree
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.ensemble import AdaBoostRegressor, RandomForestRegressor, GradientBoostingRegressor, BaggingRegressor 
+from sklearn.svm import SVR
 from sklearn.metrics import r2_score
 from tensorflow.python import keras
 from keras.wrappers.scikit_learn import KerasRegressor
@@ -88,7 +89,7 @@ def save_y_pred(mode, option, method, y_test, y_pred):
     base_dir = os.path.join('R2_scores')
 
     # Define file name
-    file_name = f'{mode}{option.capitalize()}{method}.csv'
+    file_name = f'{mode}{option.capitalize()}{method}SVR.csv'   # Added SVR 
     file_path = os.path.join(base_dir, file_name)
     
     if os.path.exists(file_path):
@@ -339,16 +340,26 @@ if mode == 'NN':
 # Parameter library for HPT
 elif mode == 'SK':
     model_params = {
-        'TR':{
-            'model': tree.DecisionTreeRegressor(),
+        'SVM': {
+            'model': SVR(),
             'params': {
-                'max_features': [None, 'sqrt', 'log2'],
-                'splitter': ['best', 'random'],
-                'min_weight_fraction_leaf': [0.0, 0.01, 0.02, 0.03, 0.04, 0.05],
-                'max_depth': [3, 4, 5, 6, 7],
-                'random_state':[0]
+                'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+                'C': [0.1, 1, 10],
+                'epsilon': [0.1, 0.2, 0.5],
+                'degree': [2, 3, 4]
             }
         },
+
+        # 'TR':{
+        #     'model': tree.DecisionTreeRegressor(),
+        #     'params': {
+        #         'max_features': [None, 'sqrt', 'log2'],
+        #         'splitter': ['best', 'random'],
+        #         'min_weight_fraction_leaf': [0.0, 0.01, 0.02, 0.03, 0.04, 0.05],
+        #         'max_depth': [3, 4, 5, 6, 7],
+        #         'random_state':[0]
+        #     }
+        # },
 
         # 'RFR':{
         #     'model': RandomForestRegressor(),
@@ -496,9 +507,9 @@ elif mode == 'SK':
                         save_y_pred(mode, option, 'borda', yTest, y_pred)
                         
                         # R2 score
-                        balance_score = r2_score(yTest, y_pred)
-                        print(f'{classifier_name}({option}) - {target_variable} score(borda) = {balance_score}')
-                        print("Best parameters:", grid_search.best_params_) 
+                        # balance_score = r2_score(yTest, y_pred)
+                        # print(f'{classifier_name}({option}) - {target_variable} score(borda) = {balance_score}')
+                        # print("Best parameters:", grid_search.best_params_) 
 
                         # === === === ===
                         # Folder to store all models
