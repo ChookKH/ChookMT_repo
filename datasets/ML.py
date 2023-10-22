@@ -281,15 +281,15 @@ if option in dataset:
                 gridSearch.fit(XtrainDFSelected, yTrain, sample_weight=weights)
 
                 # Predict using the trained model
-                y_pred = gridSearch.predict(XtestDFSelected)
+                yPred = gridSearch.predict(XtestDFSelected)
 
-                # Call the function to save y_test with appended y_pred column
+                # Call the function to save y_test with appended yPred column
                 # save_y_pred(mode, option, 'borda', yTest, yPred)
                 
                 # R2 score
-                balanceScore = r2_score(yTest, y_pred)
-                print(f'{Name}({option}) - {target} score(borda) = {balanceScore}')
-                print("Best parameters:", gridSearch.best_params_) 
+                balanceScore = r2_score(yTest, yPred)
+                # print(f'{Name}({option}) - {target} score(borda) = {balanceScore}')
+                # print("Best parameters:", gridSearch.best_params_) 
 
                 # === === === ===
                 # Folder to store all models
@@ -305,7 +305,7 @@ if option in dataset:
                     )
                 if not os.path.exists(folderName):
                     os.makedirs(folderName)
-    
+     
                 # Save the trained model using pickle
                 modelFilename = f'{folderName}/{Name}_{target}_borda.pickle'
                 with open(modelFilename, 'wb') as modelFile:
