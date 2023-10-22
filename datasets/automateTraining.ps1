@@ -1,45 +1,29 @@
 # === === === ===
 # Liaw dataset
 # === === === ===
-# Neural networks
-# python .\ML.py liaw NN Trunk Train && `
-# python .\ML.py liaw NN Leg Train && `
-# python .\ML.py liaw NN Arm Train && `
-# python .\ML.py liaw NN Speed Train && `
-# python .\ML.py liaw NN Fluency Train && `
-# python .\ML.py liaw NN Stability Train && `
-
 # SKlearn tree based regressors
-python .\ML.py liaw SK Trunk Train && `
-python .\ML.py liaw SK Leg Train && `
-python .\ML.py liaw SK Arm Train && `
-python .\ML.py liaw SK Speed Train && `
-python .\ML.py liaw SK Fluency Train && `
-python .\ML.py liaw SK Stability Train && `
+python .\ML.py liaw Trunk && `
+python .\ML.py liaw Leg && `
+python .\ML.py liaw Arm && `
+python .\ML.py liaw Speed && `
+python .\ML.py liaw Fluency && `
+python .\ML.py liaw Stability && `
 
 
 # === === === ===
 # Chook dataset
 # === === === ===
-# Neural networks
-# python .\ML.py std NN Trunk Train && `
-# python .\ML.py std NN Leg Train && `
-# python .\ML.py std NN Arm Train && `
-# python .\ML.py std NN Speed Train && `
-# python .\ML.py std NN Fluency Train && `
-# python .\ML.py std NN Stability Train && `
-
 # SKlearn tree based regressors
-python .\ML.py std SK Trunk Train && `
-python .\ML.py std SK Leg Train && `
-python .\ML.py std SK Arm Train && `
-python .\ML.py std SK Speed Train && `
-python .\ML.py std SK Fluency Train && `
-python .\ML.py std SK Stability Train && `
+python .\ML.py std Trunk && `
+python .\ML.py std Leg && `
+python .\ML.py std Arm && `
+python .\ML.py std Speed && `
+python .\ML.py std Fluency && `
+python .\ML.py std Stability && `
 
-python .\ML.py ci SK Trunk Train && `
-python .\ML.py ci SK Leg Train && `
-python .\ML.py ci SK Arm Train && `
-python .\ML.py ci SK Speed Train && `
-python .\ML.py ci SK Fluency Train && `
-python .\ML.py ci SK Stability Train 
+python .\ML.py ci Trunk && `
+python .\ML.py ci Leg && `
+python .\ML.py ci Arm && `
+python .\ML.py ci Speed && `
+python .\ML.py ci Fluency && `
+python .\ML.py ci Stability 
