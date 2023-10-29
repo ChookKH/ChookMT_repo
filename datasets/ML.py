@@ -1,5 +1,6 @@
 import os, sys, io
 import pandas as pd 
+import numpy as np
 import pickle
 from sklearn import tree
 from sklearn.model_selection import GridSearchCV, KFold
@@ -171,15 +172,15 @@ else:
 # FOR sklearn tree based regressors
 # Parameter library for HPT
 modelParams = {
-    'SVM': {
-        'model': SVR(),
-        'params': {
-            'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
-            'C': [0.1, 1, 10],
-            'epsilon': [0.1, 0.2, 0.5],
-            'degree': [2, 3, 4]
-        }
-    },
+    # 'SVM': {
+    #     'model': SVR(),
+    #     'params': {
+    #         'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+    #         'C': [0.1, 1, 10],
+    #         'epsilon': [0.1, 0.2, 0.5],
+    #         'degree': [2, 3, 4]
+    #     }
+    # },
 
     # 'TR':{
     #     'model': tree.DecisionTreeRegressor(),
@@ -192,21 +193,21 @@ modelParams = {
     #     }
     # },
 
-    # 'RFR':{
-    #     'model': RandomForestRegressor(),
-    #     'params': {
-    #         'n_estimators': [50, 100, 500, 1000],
-    #         'random_state':[0]
-    #     }
-    # },
+    'RFR':{
+        'model': RandomForestRegressor(),
+        'params': {
+            'n_estimators': [50, 100, 500, 1000],
+            'random_state':[0]
+        }
+    },
 
-    # 'ABR':{
-    #     'model': AdaBoostRegressor(),
-    #     'params': {
-    #         'n_estimators': [50, 100, 500, 1000],
-    #         'random_state':[0]
-    #     }
-    # }
+    'ABR':{
+        'model': AdaBoostRegressor(),
+        'params': {
+            'n_estimators': [50, 100, 500, 1000],
+            'random_state':[0]
+        }
+    }
 }
 
 
@@ -249,15 +250,12 @@ if option in dataset:
 
             # Construct the base folder path for feature_list
             featurePath = os.path.join(
-                os.getcwd(), 'feature_list', 'ensemble'
+                os.getcwd(), 'feature_list'
             )
-
-            # Define the folder names for the three methods
-            methodFolders = ['borda']
 
             # Load and train model for each method
             fileName = f'borda_{option}_{target}.csv'
-            filePath = os.path.join(featurePath, 'borda', fileName)
+            filePath = os.path.join(featurePath, fileName)
 
             # Check if the file exists
             if os.path.exists(filePath):
@@ -268,8 +266,8 @@ if option in dataset:
                 sortedFeatures = selectedFeaturesDf['x'].sort_values(ascending=False)
 
                 # Number of features that would be taken (10% of sample size)
-                numFeatures_to_keep = int(0.1 * len(yTrainCollection[target]))
-                topFeatures = sortedFeatures.index[:numFeatures_to_keep]
+                numFeaturesToKeep = int(0.1 * len(yTrainCollection[target]))
+                topFeatures = sortedFeatures.index[:numFeaturesToKeep]
 
                 # New Xtrain and Xtest
                 XtrainDFSelected = XtrainDF[topFeatures]
@@ -281,8 +279,14 @@ if option in dataset:
                 # Predict using the trained model
                 yPred = gridSearch.predict(XtestDFSelected)
 
+                # Capping the SMS-subscores at 0 and 3
+                capUpperValues = np.vectorize(lambda x: 3.0 if x > 3.0 else x)
+                capLowerValues = np.vectorize(lambda x: 0.0 if x < 0.0 else x)
+                yPred = capUpperValues(yPred)
+                yPred = capLowerValues(yPred)
+
                 # Call the function to save y_test with appended yPred column
-                # save_y_pred(mode, option, 'borda', yTest, yPred)
+                save_y_pred(option, 'borda', yTest, yPred)
                 
                 # R2 score
                 balanceScore = r2_score(yTest, yPred)
@@ -292,14 +296,14 @@ if option in dataset:
                 # === === === ===
                 # Folder to store all models
                 modelsFolder = os.path.join(
-                    os.getcwd(), 'SK_models'
+                    os.getcwd(), 'Models'
                     )
                 if not os.path.exists(modelsFolder):
                     os.makedirs(modelsFolder)
     
                 # Create folder for each dataset and classifier
                 folderName = os.path.join(
-                    modelsFolder, f'SK_{datasetInfo["folder"]}_{Name}'
+                    modelsFolder, f'{datasetInfo["folder"]}_{Name}'
                     )
                 if not os.path.exists(folderName):
                     os.makedirs(folderName)
@@ -312,6 +316,6 @@ if option in dataset:
                 print(f"Trained {Name} model for {target} saved as {modelFilename}")
 
             else:
-                print(f"File not found for method: {methodFolders}")
+                print(f"File not found for method: {fileName}")
 else:
     print("Invalid option. Use 'std' or 'ci' or 'liaw'.")
