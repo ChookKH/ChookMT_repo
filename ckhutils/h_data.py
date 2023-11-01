@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os, io, zipfile, sys, shutil
 
 class healthy_data:
@@ -98,7 +99,8 @@ class healthy_data:
             [['Status']]
         )                        
 
-    def export_data(self, subFolder, datFileName, dataframe):
+
+    def export_data(self, subFolder, datFileName, dataframe, fileSuffix):
         '''
         Export data into subfolders according to stride pair id
         '''
@@ -109,7 +111,7 @@ class healthy_data:
         parentDir = os.path.abspath(os.path.join(currentDir, os.pardir))
 
         # Specify the path to the ckhExportedData folder based on sys.argv[3]
-        exportedDir = os.path.join(parentDir, f"ckhExportedData{sys.argv[3].upper()}")
+        exportedDir = os.path.join(parentDir, f"ckhExportedData{fileSuffix}")
 
         # Creating subfolder name
         subfolderName = subFolder
@@ -132,3 +134,18 @@ class healthy_data:
             dataframe.to_csv(file_path, sep=' ', index=True, header=False)
         else:
             dataframe.to_csv(file_path, sep=' ', index=True)
+
+    
+    # Gait parameter series (within refband check, within = 0, else = 1)
+    def check_within_limits(self, gpSeries, lowerLimits, upperLimits):
+        '''
+        Compare Aff subject gait parameter series with healthy subjects
+        '''
+        withinCheck = pd.Series(
+            np.where(
+                (gpSeries >= lowerLimits) & (gpSeries <= upperLimits), 
+                0, 1
+            ),index=gpSeries.index, name='Result'
+        )
+    
+        return withinCheck
