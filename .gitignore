@@ -19,3 +19,4 @@ R/*
 datasets/test.py
 **/DOT_files/*
 **/DT_plots/*
+**/Models/SHAP_subscore_feature_importance/*
