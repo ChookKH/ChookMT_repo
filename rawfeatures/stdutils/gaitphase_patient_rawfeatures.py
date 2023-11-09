@@ -4,6 +4,7 @@ import csv
 import shutil
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from scipy import integrate
 from collections import defaultdict
 from ckhutils.h_data import healthy_data
@@ -131,6 +132,7 @@ def extract_gaitphase_rawfeatures(
 # Initialize for healthy kinematics data
 healthyData = healthy_data()
 
+
 # === === === ===
 # Raw features extracted from a gait phase
 class gaitphase_rawfeatures:
@@ -162,24 +164,121 @@ class gaitphase_rawfeatures:
         _tGaitLowerUnAff_Patient = float(_tGaitLowerUnAff_Patient)
         _tGaitUpperUnAff_Patient = float(_tGaitUpperUnAff_Patient)
 
+        # Time stamps for healthy collective (averaged over both normalized sides)
         _tGaitLowerAff_RB = float(_tGaitLowerAff_RB)
-        _tGaitUpperAff_RB = float(_tGaitUpperAff_RB)
         _tGaitLowerUnAff_RB = float(_tGaitLowerUnAff_RB)
+        _tGaitLower_RB = (_tGaitLowerAff_RB + _tGaitLowerUnAff_RB)/2
+
+        _tGaitUpperAff_RB = float(_tGaitUpperAff_RB)
         _tGaitUpperUnAff_RB = float(_tGaitUpperUnAff_RB)
+        _tGaitUpper_RB = (_tGaitUpperAff_RB + _tGaitUpperUnAff_RB)/2
 
         # First remove '%time' in _affNormFeaturesDict
         if '%time' in _affNormFeaturesDict:
             _affNormFeaturesDict.pop('%time')
 
-
-        phasePatDS_Aff, phasePatDS_UnAff = self.extract_phaseDF(
+        # Partitioning the patient's time-progressions
+        self.phasePatDS_Aff, self.phasePatDS_UnAff = self.extract_phaseDF(
             _patDS,
             _tGaitLowerAff_Patient, _tGaitLowerUnAff_Patient,
             _tGaitUpperAff_Patient, _tGaitUpperUnAff_Patient,
             _affNormFeaturesDict, _unaffNormFeaturesDict
         )
 
+        # Partitioning the upper reference bands
+        self.phaseRBUpper_Aff, self.phaseRBUpper_UnAff = self.extract_phaseDF(
+            _RB_UpperDF,
+            _tGaitLower_RB, _tGaitLower_RB,
+            _tGaitUpper_RB, _tGaitUpper_RB,
+            _affNormFeaturesDict, _unaffNormFeaturesDict
+        )
 
+        # Partitioning the lower reference bands
+        self.phaseRBLower_Aff, self.phaseRBLower_UnAff = self.extract_phaseDF(
+            _RB_LowerDF,
+            _tGaitLower_RB, _tGaitLower_RB,
+            _tGaitUpper_RB, _tGaitUpper_RB,
+            _affNormFeaturesDict, _unaffNormFeaturesDict
+        )
+
+        # Partitioning the mean reference bands
+        self.phaseRBMean_Aff, self.phaseRBMean_UnAff = self.extract_phaseDF(
+            _RB_MeanDF,
+            _tGaitLower_RB, _tGaitLower_RB,
+            _tGaitUpper_RB, _tGaitUpper_RB,
+            _affNormFeaturesDict, _unaffNormFeaturesDict
+        )
+        
+
+        # From Chook
+        # Min (affected side features)
+        feature_ = "kneeJointAff_flexion.q"
+
+        # # MIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        minVal = self.phasePatDS_Aff.min()
+        minVal_time = self.phasePatDS_Aff.index[self.phasePatDS_Aff[feature_] == minVal[feature_]]
+        minRBLower_time = self.phaseRBLower_Aff.index[self.phaseRBLower_Aff[feature_] == self.phaseRBLower_Aff[feature_].min()]
+        minRBUpper_time = self.phaseRBUpper_Aff.index[self.phaseRBUpper_Aff[feature_] == self.phaseRBUpper_Aff[feature_].min()]
+        
+        # If within reference band, the conditions are:
+        # 1. minVal <= upperBand.min()
+        # 2. minVal >= lowerBand.min()
+        plt.figure()
+        plt.plot(_patDS.index, _patDS[feature_], label="Patient")
+        plt.plot(_RB_LowerDF.index, _RB_LowerDF[feature_], label="Lower")
+        plt.plot(_RB_UpperDF.index, _RB_UpperDF[feature_], label="Upper")
+        plt.scatter(minVal_time, minVal[feature_])
+        plt.scatter(minRBLower_time, self.phaseRBLower_Aff[feature_].min())
+        plt.scatter(minRBUpper_time, self.phaseRBUpper_Aff[feature_].min())
+
+        minVal_RBCheck = (minVal <= self.phaseRBUpper_Aff.min()) & (minVal >= self.phaseRBLower_Aff.min())
+        # print(minVal[feature_])
+        # print(self.phaseRBUpper_Aff.min()[feature_])
+        # print(self.phaseRBLower_Aff.min()[feature_])
+        # print(minVal_RBCheck[feature_])
+
+        # # MAX!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # maxVal = phasePatDS_Aff.max()
+        # maxVal_time = phasePatDS_Aff.index[phasePatDS_Aff[feature_] == maxVal[feature_]]
+        # maxRBLower_time = phaseRBLower_Aff.index[phaseRBLower_Aff[feature_] == phaseRBLower_Aff[feature_].max()]
+        # maxRBUpper_time = phaseRBUpper_Aff.index[phaseRBUpper_Aff[feature_] == phaseRBUpper_Aff[feature_].max()]
+
+        # # If within reference band, the conditions are:
+        # # 1. maxVal <= upperBand.max()
+        # # 2. maxVal >= lowerBand.max()
+        # plt.figure()
+        # plt.plot(_patDS.index, _patDS[feature_], label="Patient")
+        # plt.plot(_RB_LowerDF.index, _RB_LowerDF[feature_], label="Lower")
+        # plt.plot(_RB_UpperDF.index, _RB_UpperDF[feature_], label="Upper")
+        # plt.scatter(maxVal_time, maxVal[feature_])
+        # plt.scatter(maxRBLower_time, phaseRBLower_Aff[feature_].max())
+        # plt.scatter(maxRBUpper_time, phaseRBUpper_Aff[feature_].max())
+
+        # maxVal_RBCheck = (maxVal <= phaseRBUpper_Aff.max()) & (maxVal >= phaseRBLower_Aff.max())
+        # print(maxVal[feature_])
+        # print(phaseRBUpper_Aff.max()[feature_])
+        # print(phaseRBLower_Aff.max()[feature_])
+        # print(maxVal_RBCheck[feature_])
+
+        # # MEDIAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # medianVal = phasePatDS_Aff.median()
+
+        # # If within reference band, the conditions are:
+        # # 1. medianVal <= upperBand.median()
+        # # 2. medianVal >= lowerBand.median()
+        # plt.figure()
+        # plt.axhline(medianVal[feature_], label="Patient", color="red")
+        # plt.axhline(phaseRBLower_Aff[feature_].median())
+        # plt.axhline(phaseRBUpper_Aff[feature_].median())
+
+        # medianVal_RBCheck = (medianVal <= phaseRBUpper_Aff.median()) & (medianVal >= phaseRBLower_Aff.median())
+        # print(medianVal[feature_])
+        # print(phaseRBUpper_Aff.median()[feature_])
+        # print(phaseRBLower_Aff.median()[feature_])
+        # print(medianVal_RBCheck[feature_])
+ 
+        plt.legend()
+        plt.show()
         # === === === ===
         # Update 01.12.2021
         # -----------------
@@ -191,8 +290,8 @@ class gaitphase_rawfeatures:
 
         # Patient stats
         # -------------
-        self.StatsDF = self.extract_patient_stats(phasePatDS_Aff, phasePatDS_UnAff)
-
+        self.StatsDF = self.extract_patient_stats(self.phasePatDS_Aff, self.phasePatDS_UnAff)
+        
         self.StatsDF = self.StatsDF.drop(
             labels=['kneeJointUnAff_varus/adduction.q', 
                     'kneeJointAff_varus/adduction.q', 
@@ -202,7 +301,7 @@ class gaitphase_rawfeatures:
         )
 
         self.StatsDF = self.StatsDF.rename_axis('Stats')
-
+        
         # Seperate the UnAff side
         self.UnAffDF = self.StatsDF[self.StatsDF.index.str.contains('UnAff')]
         
@@ -232,32 +331,42 @@ class gaitphase_rawfeatures:
     # Update 27.04.2023 (Chook)
     # -----------------
     # Changed comparison from less than to within refband (within=0, else 1)
-    def within_RB_check(self, pat_df, rb_df):
+    def within_RB_check(self, side):
         '''
         Method to check whether the patient stats lie within refband stats
         '''
-        output_df = pd.DataFrame()
-
-        output_df['Min'] = (
-            (pat_df['Min'] >= rb_df['Min']) & 
-            (pat_df['Min'] <= rb_df['Max'])
-        )
-
-        output_df['Median'] = (
-            (pat_df['Median'] >= rb_df['Min']) & 
-            (pat_df['Median'] <= rb_df['Max'])
-        )
-
-        output_df['Max'] = (
-            (pat_df['Max'] >= rb_df['Min']) &
-            (pat_df['Max'] <= rb_df['Max'])
-        )
+        if side == 'Aff':
+            sidePatData = self.phasePatDS_Aff
+            upper = self.phaseRBUpper_Aff
+            lower = self.phaseRBLower_Aff
+        elif side == 'UnAff':
+            sidePatData = self.phasePatDS_UnAff
+            upper = self.phaseRBUpper_UnAff
+            lower = self.phaseRBLower_UnAff
+        else:
+            raise ValueError("Invalid side. Please choose 'Aff' or 'UnAff'.")
+    
+        stats_results = {}
+        for stat_type in ['min', 'median', 'max']:
+            if stat_type == 'min':
+                upper_limit = upper.min()
+                lower_limit = lower.min()
+            elif stat_type == 'median':
+                upper_limit = upper.median()
+                lower_limit = lower.median()
+            else:
+                upper_limit = upper.max()
+                lower_limit = lower.max()
+            
+            patStat = getattr(sidePatData, stat_type)()
+            checkRB = (~(patStat.between(lower_limit, upper_limit))).astype(int);print(checkRB)
+            stats_results[stat_type.capitalize()] = checkRB
+    
+        checkRB_df = pd.DataFrame(stats_results)
+        checkRB_df = checkRB_df.rename_axis('OriIndex')
+        checkRB_df = checkRB_df[~checkRB_df.index.str.contains('/adduction')]
         
-        output_df = ~output_df
-        output_df = output_df.astype(int)
-        output_df.columns = ['Min', 'Median', 'Max']
-
-        return output_df 
+        return checkRB_df
 
 
     def initialize_hMetadata(self):
@@ -292,16 +401,16 @@ class gaitphase_rawfeatures:
         return mergedLowerSD, mergedUpperSD, mergedLowerCI, mergedUpperCI
 
 
-    def get_hUpperMetadata(self, _phaseStart, _phaseEnd):
+    def get_hUpperMetadata(self, _phaseStart, _phaseEnd, _errorband):
         '''
         Function to classify healthy subject gait width and gait start percentage
         '''
         h_upper_metadata = pd.Series({}, dtype=float)
 
-        if sys.argv[3] == 'std':
+        if _errorband == 'std':
             ci_or_std = self.UpperSD
 
-        elif sys.argv[3] == 'ci':
+        elif _errorband == 'ci':
             ci_or_std = self.UpperCI
         
         # Entire stride
@@ -328,15 +437,15 @@ class gaitphase_rawfeatures:
         return h_upper_metadata
 
 
-    def get_hLowerMetadata(self, _phaseStart, _phaseEnd):
+    def get_hLowerMetadata(self, _phaseStart, _phaseEnd, _errorband):
         '''
         Function to classify healthy subject gait width and gait start percentage
         '''
         h_lower_metadata = pd.Series({}, dtype=float)
 
-        if sys.argv[3] == 'std':
+        if _errorband == 'std':
             ci_or_std = self.LowerSD
-        elif sys.argv[3] == 'ci':
+        elif _errorband == 'ci':
             ci_or_std = self.LowerCI
         
         # Entire stride
