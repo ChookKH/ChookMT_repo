@@ -39,18 +39,18 @@ def export(folderName, dataframe, name):
 
     dataframe.to_csv(file_path, sep=' ', index=True)
 
-# Get ci dataset
-train = get_dataset('Datasets_CI', 'TrainDataset_CI.dat')
-test = get_dataset('Datasets_CI', 'TestDataset_CI.dat')
+# Get wished dataset
+train = get_dataset('Datasets_SD', 'TrainDataset_SD.dat')
+test = get_dataset('Datasets_SD', 'TestDataset_SD.dat')
 
 # Get reference data
-armRef = get_dataset('Datasets_SD', 'ArmDataset_SD.dat')
-legRef = get_dataset('Datasets_SD', 'LegDataset_SD.dat')
+armRef = get_dataset('Datasets_Liaw', 'ArmDataset_Liaw.dat')
+legRef = get_dataset('Datasets_Liaw', 'LegDataset_Liaw.dat')
 
 # Trim dataset
-legCI = train[legRef.columns]
-armCI = train[armRef.columns]
+legTrim = train[legRef.columns]
+armTrim = train[armRef.columns]
 
 # Export file
-export('Datasets_CI', legCI, 'NewLegDataset_CI.dat')
-export('Datasets_CI', armCI, 'NewArmDataset_CI.dat')
+export('Datasets_SD', legTrim, 'LegDataset_SD.dat')
+export('Datasets_SD', armTrim, 'ArmDataset_SD.dat')

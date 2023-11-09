@@ -26,6 +26,4 @@ dot_data = export_graphviz(
 )
 graph = graphviz.Source(dot_data)
 graph = Source(dot_data, filename=savefile, format="png")
-graph.view()
-
-sys.exit(0)
+# graph.view()
