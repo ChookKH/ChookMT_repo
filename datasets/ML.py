@@ -172,26 +172,26 @@ else:
 # FOR sklearn tree based regressors
 # Parameter library for HPT
 modelParams = {
-    # 'SVM': {
-    #     'model': SVR(),
-    #     'params': {
-    #         'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
-    #         'C': [0.1, 1, 10],
-    #         'epsilon': [0.1, 0.2, 0.5],
-    #         'degree': [2, 3, 4]
-    #     }
-    # },
+    'SVM': {
+        'model': SVR(),
+        'params': {
+            'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+            'C': [0.1, 1, 10],
+            'epsilon': [0.1, 0.2, 0.5],
+            'degree': [2, 3, 4]
+        }
+    },
 
-    # 'TR':{
-    #     'model': tree.DecisionTreeRegressor(),
-    #     'params': {
-    #         'max_features': [None, 'sqrt', 'log2'],
-    #         'splitter': ['best', 'random'],
-    #         'min_weight_fraction_leaf': [0.0, 0.01, 0.02, 0.03, 0.04, 0.05],
-    #         'max_depth': [3, 4, 5, 6, 7],
-    #         'random_state':[0]
-    #     }
-    # },
+    'TR':{
+        'model': tree.DecisionTreeRegressor(),
+        'params': {
+            'max_features': [None, 'sqrt', 'log2'],
+            'splitter': ['best', 'random'],
+            'min_weight_fraction_leaf': [0.0, 0.01, 0.02, 0.03, 0.04, 0.05],
+            'max_depth': [3, 4, 5, 6, 7],
+            'random_state':[0]
+        }
+    },
 
     'RFR':{
         'model': RandomForestRegressor(),
@@ -284,7 +284,7 @@ if option in dataset:
                 capLowerValues = np.vectorize(lambda x: 0.0 if x < 0.0 else x)
                 yPred = capUpperValues(yPred)
                 yPred = capLowerValues(yPred)
-
+                
                 # Call the function to save y_test with appended yPred column
                 save_y_pred(option, 'borda', yTest, yPred)
                 
