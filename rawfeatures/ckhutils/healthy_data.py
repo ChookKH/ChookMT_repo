@@ -4,23 +4,17 @@ import os, io, zipfile, sys, shutil
 
 class healthy_data:
 
-    def __init__(self):
+    def __init__(self, _refbandDir):
            
         # Obtaining healthy gait event durations, parameters and phases
-        self.gait_eve, self.gait_par, self.gait_pha = self.initialize_hData()
+        self.gaitEvents, self.gaitParameters, self.gait_pha = self.initialize_hData(_refbandDir)
 
-    def initialize_hData(self):
+    def initialize_hData(self, _refbandDir):
         '''
         Extract healthy gait event durations, parameter and phases
         '''
         # Read .dat file
-        current_dir = os.getcwd()
-        newRefband = os.path.join(
-            current_dir, '..', 'refBand', 
-            'RefBand_GaitPE_repTrials_n1.dat'
-        )
-
-        with open(newRefband, mode='r') as file:
+        with open(_refbandDir.joinpath("RefBand_GaitPE_repTrials_n1.dat"), mode='r') as file:
             h_data = file.read()
 
         # Classify into phase duration, parameters and phases

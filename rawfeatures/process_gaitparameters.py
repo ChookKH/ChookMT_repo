@@ -62,3 +62,38 @@ def extract_gaitparameters(gp, _affSide, _side="Aff", stance_swing=False):
     gpSeries = pd.concat([gpSeries, pd.Series([gp['stepWidth'] / pelvisWidth], index=[f'StepWidth{_side}'])])
     
     return gpSeries
+
+def check_gpWithinNorm(_gpSeriesAff, _gpSeriesUnAff, _healthyData):
+    # Remove "Aff" for series comparison
+    gpSeriesAff_tmp = pd.Series(
+        _gpSeriesAff.values, index=_gpSeriesAff.index.str.replace("Aff", '')
+    )
+
+    # Remove "UnAff" for series comparison
+    gpSeriesUnAff_tmp = pd.Series(
+        _gpSeriesUnAff.values, index=_gpSeriesUnAff.index.str.replace("UnAff", '')
+    )
+    
+    # S.D check
+    parameterSD = hData.gait_par.set_index('Measure')
+    affWithinSDCheck = hData.check_within_limits(
+        gpSeriesAff, 
+        parameterSD['Lower-S.D'], 
+        parameterSD['Upper-S.D']
+    )
+        
+    unAffWithinSDCheck = hData.check_within_limits(
+        gpSeriesUnAff, 
+        parameterSD['Lower-S.D'], 
+        parameterSD['Upper-S.D']
+    )
+        
+    combinedSeries = pd.Series(dtype=object,index=gpSeries.index)
+    combinedSeries['StridePairID'] = gpSeries['StridePairID']
+    combinedSeries['Auxiliary'] = gpSeries['Auxiliary']
+    
+    for index in affWithinSDCheck.index:
+        combinedSeries[index + 'Aff'] = affWithinSDCheck[index]
+
+    for index in unAffWithinSDCheck.index:
+        combinedSeries[index + 'UnAff'] = unAffWithinSDCheck[index]

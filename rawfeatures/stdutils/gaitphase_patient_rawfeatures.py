@@ -4,11 +4,9 @@ import csv
 import shutil
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from scipy import integrate
+import matplotlib.pyplot as plt
 from collections import defaultdict
-from ckhutils.h_data import healthy_data
-
 
 def check_user_phaseStartEnd(_usrarg):
     '''
@@ -128,9 +126,6 @@ def extract_gaitphase_rawfeatures(
         )
 
     return gpObj
-
-# Initialize for healthy kinematics data
-healthyData = healthy_data()
 
 
 # === === === ===
@@ -369,10 +364,11 @@ class gaitphase_rawfeatures:
         return checkRB_df
 
 
-    def initialize_hMetadata(self):
+    def initialize_hMetadata(self, healthyData):
         '''
-        (Implemented by Chook)
-        Extract healthy gait stats
+        Extract healthy gait stats (implemented by Chook)
+
+        Input: healthyData <ckhutils/h_data.py::healthy_data(_refbandDir)>
         '''
         events = healthyData.gait_eve.set_index('Measure')
         phases = healthyData.gait_pha.set_index('Measure')

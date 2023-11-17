@@ -12,72 +12,150 @@ from stdutils import patient_refband_grouping
 from stdutils import extract_gaitphase_rawfeatures
 from stdutils import load_patients_trials as loader
 from stdutils import map_patients_trials
+from stdutils.gaitphase_patient_rawfeatures import gaitphase_rawfeatures
 from process_gaitparameters import extract_gaitparameters
 
-if len(sys.argv) < 4:
-    print(
-        "\nPossible usage:\npython3 main.py " +
-        "<dirOfRefBandData> <dirOfPatientTrials> <errorBandParameters>"
+from ckhutils import healthy_data
+
+def process_phase(idx, patRB_group, stridePairID, phaseStart, phaseEnd, filename):
+    '''
+    Process the phases to print out 1 or 0 and export .dat file 
+    '''
+    phase_data = extract_gaitphase_rawfeatures(
+        idx, patRB_group, stridePairID, 
+        _phaseStart=phaseStart, _phaseEnd=phaseEnd
     )
+
+    # Initialize the kinematic data for healthy subject
+    phase_h_kine = hData.intialize_hKinematics(filename)
+    
+    # Create a column OriIndex to retain original index
+    phase_data.UnAffDF = pd.concat(
+        [
+            phase_data.UnAffDF, 
+                pd.DataFrame(
+                    data=list(phase_data.UnAffDF.index), 
+                    columns=['OriIndex'], 
+                    index=phase_data.UnAffDF.index
+                )
+        ], axis=1
+    )
+    
+    phase_data.AffDF = pd.concat(
+        [
+            phase_data.AffDF, 
+            pd.DataFrame(
+                data=list(phase_data.AffDF.index), 
+                columns=['OriIndex'], 
+                index=phase_data.AffDF.index
+            )
+        ], axis=1
+    )
+
+    # Unaffected side of subject do within refband check (within=0, else=1) 
+    phase_UnAff_RB_check = phase_data.within_RB_check('UnAff')
+
+    # Affected side of subject do within refband check (within=0, else=1)
+    phase_Aff_RB_check = phase_data.within_RB_check('Aff')
+
+    # Get healthy subject upper and lower boundary metadata
+    phase_upper = phase_data.get_hUpperMetadata(phaseStart, phaseEnd, "std")
+    phase_lower = phase_data.get_hLowerMetadata(phaseStart, phaseEnd, "std")
+    pat_phase = phase_data.Metadata
+
+    # Patient metadat of subject do is_in refband check (within=0, else=1)
+    phase_is_in = ((pat_phase >= phase_lower) & (pat_phase <= phase_upper))
+    phase_is_in = (~phase_is_in).astype(int)
+
+    # Unravel m x 3 data into m x 1 dataframe
+    phase_Aff_RB_check = hData.unravel(phase_Aff_RB_check)
+    phase_UnAff_RB_check = hData.unravel(phase_UnAff_RB_check)
+
+    phase_merged = pd.concat(
+        [
+            phase_is_in, 
+            phase_Aff_RB_check, 
+            phase_UnAff_RB_check
+        ], axis=0
+    ).stack().reset_index(level=1, drop=True)
+    
+    hData.export_data(stridePairID, filename, phase_merged, "STD")
+
+
+# === === === ===
+# Main
+if len(sys.argv) < 3:
+    print("Possible usage:python3 main.py <dirOfRefBandData> <dirOfPatientTrials>")
     sys.exit(1)
 else:
     rb_dir = Path(sys.argv[1]).resolve()
-    patientsinfo_dir = Path(sys.argv[2])
-    errorband = sys.argv[3]
+    metadata_dir = Path(sys.argv[2])
 
 
 # === === === ===
 # Grab the folder name of the reference band and test subject data
-refBand = rb_dir.name; patientsgroup = patientsinfo_dir.name
+refBand = rb_dir.name; patientsgroup = metadata_dir.name
+
+# Importing class of healthy data
+hData = healthy_data(rb_dir)
 
 
 # === === === ===
 # Initializing dictionary, mapping patients and their respective trials
 # Key   : Patient ID
-# Value : [<Patient Object>, <List of Valid/Clean Trial Objects>]
-subjects, trials = loader(patientsinfo_dir)
+# Value : [<List of Valid/Clean Trial Objects>]
+patients, trials = loader(metadata_dir)
+
+# print(f"Number of patients: {len(patients)}")
+# print(f"Number of trials  : {len(trials)}")
 
 unsensiblePairs = []; noCommonPairs_trials = []
 
-patient_trials_dict = map_patients_trials(subjects[0:3], trials)
+patient_trials_dict = map_patients_trials(patients, trials)
 
 
 # === === === ===
 # Extracting features
 for patientID, trialObjects in patient_trials_dict.items():
-    print(f"=========================\nDealing with {patientID}\n---")
+    # print(f"=========================\nDealing with {patientID}\n---")
 
     for t in trialObjects:
-        print(f" - {t.TrialID} ... ")
+        # print(f" - {t.TrialID} ... ")
 
         # Grouping the patient's trial data and reference band together
         patRB_group = patient_refband_grouping(
-            rb_dir, t, errorband, _testSubjectsSide=None
+            rb_dir, t, "std", _testSubjectsSide=None
         )
 
         # === === === ===
-        # If the group has at least one common pair
-        # ---
-        # Note: Checks have been implemented to ensure that every valid patient stride meets the following
-        # condition
-        # 1. Appropriate left and right stride pairs
-        # 1.1 Left and right stride pairs with the same index
-        # 1.2 Left and right stride pairs with different indices, but sequential (1-2, 4-5, etc..)
-        # 2. For each left and right stride, there should be a corresponding valid gait parameters file
-        # 2.1 In each trial object, any faulty or problematic file is simply ignored
-        # 2.2 That is handled by the script process_rawdata/filer_data.py
+        # Update 02.05.2023
+        # -----------------
         if not patRB_group.noCommonPairs:
+        # If there is at least one common stride pair
+
             for idx, pair in patRB_group.patientstridesFileMap.items():
+                # 'idx' simply refers to a stride pair
+                # - Pair 0
+                # - Pair 1
+                # - Pair 2 and so on ...
+                # 'pair' is a dictionary the has the following keys:
+                # - 'aff': {
+                #    'kinematics':<pathOfExportedBiomechanicalAngles_affSide>,
+                #    'gaitParameters':<pathOfGaitParameters_affSide>
+                # }
+                # - 'unaff' : {(correspondingly for unaffected side)}
                 phaseFeaturesSensibility = []
 
                 strideID_Aff   = pair['aff']['kinematics'].name
                 strideID_UnAff = pair['unaff']['kinematics'].name
-                ID_Aff = strideID_Aff.split('_')[-2]; ID_UnAff = strideID_UnAff.split('_')[-2]
+
+                ID_Aff = strideID_Aff.split('_')[-2]
+                ID_UnAff = strideID_UnAff.split('_')[-2]
 
                 stridePairID = ('_').join(strideID_Aff.split('_')[0:-2])
                 stridePairID = stridePairID + f"_A{ID_Aff}_" + f"U{ID_UnAff}"
                 print(f"    > Stride pair : {stridePairID}")
-
+                
 
                 # === === === ===
                 # General patient stride data
@@ -87,105 +165,85 @@ for patientID, trialObjects in patient_trials_dict.items():
                         "Auxiliary": t.WalkTool
                     }
                 ); gpSeries = pd.Series(strideGeneralData)
-
+                
 
                 # === === === ===
                 # Patient stride gait parameters data
                 gpSeriesAff = extract_gaitparameters(
-                    patRB_group.patGPDict_aff[idx], t.AffectedSide, _side="Aff",
-                    stance_swing=False
+                    patRB_group.patGPDict_aff[idx], t.AffectedSide, 
+                    _side="Aff", stance_swing=False
                 )
                 gpSeriesUnAff = extract_gaitparameters(
-                    patRB_group.patGPDict_unaff[idx], t.AffectedSide, _side="UnAff",
-                    stance_swing=False
+                    patRB_group.patGPDict_unaff[idx], t.AffectedSide, 
+                    _side="UnAff", stance_swing=False
                 )
 
-                gpSeries = pd.concat([gpSeries, gpSeriesAff])
-                gpSeries = pd.concat([gpSeries, gpSeriesUnAff])
+                gpSeries = pd.concat([gpSeries, gpSeriesAff, gpSeriesUnAff])
 
-                # Extracting the features, per pair of patient's stride data
-                # === === === ===
-                # Entire stride
-                pat_Stride = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="initialContact", _phaseEnd="endOfTerminalSwing"
-                )
-                # Stance phase
-                pat_stancePhase = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="initialContact", _phaseEnd="endOfPreswing"
-                )
-                # Swing phase
-                pat_swingPhase = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfPreswing", _phaseEnd="endOfTerminalSwing"
-                )
+                print(gpSeries)
+                sys.exit()
 
-                # === === === ===
-                # Perry phases
-                # Initial contact
-                pat_InCnt = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="initialContact", _phaseEnd=None
-                )
+                # ckh:: Inspecting if patient's gait parameters lie within the norm
+                
+                # # Remove 'Aff' for series comparison
+                # new_index = gpSeriesAff.index.str.replace('Aff', '')
+                # gpSeriesAff = pd.Series(gpSeriesAff.values, index=new_index)
 
-                # Load response
-                pat_LdRsp = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="initialContact", _phaseEnd="endOfLoadingResponse"
-                )
+                # # Remove 'UnAff' for series comparison
+                # new_index = gpSeriesUnAff.index.str.replace('UnAff', '')
+                # gpSeriesUnAff = pd.Series(gpSeriesUnAff.values, index=new_index)
+                
+                # # S.D check
+                # parameterSD = hData.gait_par.set_index('Measure')
+                # affWithinSDCheck = hData.check_within_limits(
+                #     gpSeriesAff, 
+                #     parameterSD['Lower-S.D'], 
+                #     parameterSD['Upper-S.D']
+                # )
+                    
+                # unAffWithinSDCheck = hData.check_within_limits(
+                #     gpSeriesUnAff, 
+                #     parameterSD['Lower-S.D'], 
+                #     parameterSD['Upper-S.D']
+                # )
+                    
+                # combinedSeries = pd.Series(dtype=object,index=gpSeries.index)
+                # combinedSeries['StridePairID'] = gpSeries['StridePairID']
+                # combinedSeries['Auxiliary'] = gpSeries['Auxiliary']
+                
+                # for index in affWithinSDCheck.index:
+                #     combinedSeries[index + 'Aff'] = affWithinSDCheck[index]
 
-                # Mid stance
-                pat_MdStn = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfLoadingResponse", _phaseEnd="endOfMidstance"
-                )
+                # for index in unAffWithinSDCheck.index:
+                #     combinedSeries[index + 'UnAff'] = unAffWithinSDCheck[index]
 
-                # Terminal stance
-                pat_TrStn = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfMidstance", _phaseEnd="endOfTerminalStance"
-                )
+                # # Export series
+                # exportSeries = hData.export_data(
+                #     stridePairID, 
+                #     'GtPar_RawFeatures.dat',
+                #     combinedSeries, "STD"
+                # )
+                
+                # # Extracting the features, per pair of patient's stride data
+                # # === === === ===
+                # # Entire stride
+                # stride_phase = process_phase(
+                #     idx, patRB_group, stridePairID,
+                #     "initialContact", "endOfTerminalSwing", "Stride.dat"
+                # );sys.exit()
 
-                # Pre swing
-                pat_PrSwg = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfTerminalStance", _phaseEnd="endOfPreswing"
-                )
+                # # Entire stance
+                # stance_phase = process_phase(
+                #     idx, patRB_group, stridePairID,
+                #     "initialContact", "endOfPreswing", "Stance.dat"
+                # )
 
-                # Initial Swing
-                pat_InSwg = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfPreswing", _phaseEnd="endOfInitialSwing"
-                )
+                # # Entire swing
+                # swing_phase = process_phase(
+                #     idx, patRB_group, stridePairID,
+                #     "endOfPreswing", "endOfTerminalSwing", "Swing.dat"
+                # )      
 
-                # Mid swing
-                pat_MdSwg = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfInitialSwing", _phaseEnd="endOfMidswing"
-                )
-
-                # Terminal swing
-                pat_TrSwg = extract_gaitphase_rawfeatures(
-                    idx, patRB_group, stridePairID,
-                    _phaseStart="endOfMidswing", _phaseEnd="endOfTerminalSwing"
-                )
-
-        # If the trial has no common pair at all due to all data being faulty
-        else:
-            noCommonPairs_trials.append(t.TrialID)
-
-
-# === === === ===
-# Saving txt file with list of trials that have no valid pair of strides (if necessary)
-if len(noCommonPairs_trials) > 0:
-    f = open(
-        (patients_RB_subfolder.parent).joinpath("Trials_NoValidStridePairs.txt"), 'w'
-    )
-    for t in noCommonPairs_trials:
-        f.write(f"{t}\n")
-    f.close()
+# If the trial has no common pair at all due to all data being faulty
 else:
-    print("Every trial has at least one valid pair of stride data ... ")
-
-sys.exit(0)
+    print("Warning: This trial data has no valid stride pairs") 
