@@ -1,6 +1,4 @@
-import time
 import pickle
-import shutil
 import os, sys
 import numpy as np
 import pandas as pd
@@ -9,87 +7,24 @@ from collections import defaultdict
 
 from stdutils.patient import Patient, Trial
 from stdutils import patient_refband_grouping
-from stdutils import extract_gaitphase_rawfeatures
 from stdutils import load_patients_trials as loader
 from stdutils import map_patients_trials
 from stdutils.gaitphase_patient_rawfeatures import gaitphase_rawfeatures
-from process_gaitparameters import extract_gaitparameters
+from processes import extract_gaitparameters, check_gpWithinNorm, process_phaseData
 
 from ckhutils import healthy_data
 
-def process_phase(idx, patRB_group, stridePairID, phaseStart, phaseEnd, filename):
-    '''
-    Process the phases to print out 1 or 0 and export .dat file 
-    '''
-    phase_data = extract_gaitphase_rawfeatures(
-        idx, patRB_group, stridePairID, 
-        _phaseStart=phaseStart, _phaseEnd=phaseEnd
-    )
-
-    # Initialize the kinematic data for healthy subject
-    phase_h_kine = hData.intialize_hKinematics(filename)
-    
-    # Create a column OriIndex to retain original index
-    phase_data.UnAffDF = pd.concat(
-        [
-            phase_data.UnAffDF, 
-                pd.DataFrame(
-                    data=list(phase_data.UnAffDF.index), 
-                    columns=['OriIndex'], 
-                    index=phase_data.UnAffDF.index
-                )
-        ], axis=1
-    )
-    
-    phase_data.AffDF = pd.concat(
-        [
-            phase_data.AffDF, 
-            pd.DataFrame(
-                data=list(phase_data.AffDF.index), 
-                columns=['OriIndex'], 
-                index=phase_data.AffDF.index
-            )
-        ], axis=1
-    )
-
-    # Unaffected side of subject do within refband check (within=0, else=1) 
-    phase_UnAff_RB_check = phase_data.within_RB_check('UnAff')
-
-    # Affected side of subject do within refband check (within=0, else=1)
-    phase_Aff_RB_check = phase_data.within_RB_check('Aff')
-
-    # Get healthy subject upper and lower boundary metadata
-    phase_upper = phase_data.get_hUpperMetadata(phaseStart, phaseEnd, "std")
-    phase_lower = phase_data.get_hLowerMetadata(phaseStart, phaseEnd, "std")
-    pat_phase = phase_data.Metadata
-
-    # Patient metadat of subject do is_in refband check (within=0, else=1)
-    phase_is_in = ((pat_phase >= phase_lower) & (pat_phase <= phase_upper))
-    phase_is_in = (~phase_is_in).astype(int)
-
-    # Unravel m x 3 data into m x 1 dataframe
-    phase_Aff_RB_check = hData.unravel(phase_Aff_RB_check)
-    phase_UnAff_RB_check = hData.unravel(phase_UnAff_RB_check)
-
-    phase_merged = pd.concat(
-        [
-            phase_is_in, 
-            phase_Aff_RB_check, 
-            phase_UnAff_RB_check
-        ], axis=0
-    ).stack().reset_index(level=1, drop=True)
-    
-    hData.export_data(stridePairID, filename, phase_merged, "STD")
-
-
 # === === === ===
 # Main
-if len(sys.argv) < 3:
-    print("Possible usage:python3 main.py <dirOfRefBandData> <dirOfPatientTrials>")
+if len(sys.argv) < 4:
+    print(
+        "Possible usage:python3 main.py <dirOfRefBandData> <dirOfPatientTrials> <saveFolder_exportedData>"
+    )
     sys.exit(1)
 else:
     rb_dir = Path(sys.argv[1]).resolve()
     metadata_dir = Path(sys.argv[2])
+    saveFolder_exportedData = Path(sys.argv[3])
 
 
 # === === === ===
@@ -180,69 +115,41 @@ for patientID, trialObjects in patient_trials_dict.items():
 
                 gpSeries = pd.concat([gpSeries, gpSeriesAff, gpSeriesUnAff])
 
-                print(gpSeries)
-                sys.exit()
-
                 # ckh:: Inspecting if patient's gait parameters lie within the norm
-                
-                # # Remove 'Aff' for series comparison
-                # new_index = gpSeriesAff.index.str.replace('Aff', '')
-                # gpSeriesAff = pd.Series(gpSeriesAff.values, index=new_index)
+                gpSeries = check_gpWithinNorm(gpSeries, gpSeriesAff, gpSeriesUnAff, hData)
 
-                # # Remove 'UnAff' for series comparison
-                # new_index = gpSeriesUnAff.index.str.replace('UnAff', '')
-                # gpSeriesUnAff = pd.Series(gpSeriesUnAff.values, index=new_index)
-                
-                # # S.D check
-                # parameterSD = hData.gait_par.set_index('Measure')
-                # affWithinSDCheck = hData.check_within_limits(
-                #     gpSeriesAff, 
-                #     parameterSD['Lower-S.D'], 
-                #     parameterSD['Upper-S.D']
-                # )
-                    
-                # unAffWithinSDCheck = hData.check_within_limits(
-                #     gpSeriesUnAff, 
-                #     parameterSD['Lower-S.D'], 
-                #     parameterSD['Upper-S.D']
-                # )
-                    
-                # combinedSeries = pd.Series(dtype=object,index=gpSeries.index)
-                # combinedSeries['StridePairID'] = gpSeries['StridePairID']
-                # combinedSeries['Auxiliary'] = gpSeries['Auxiliary']
-                
-                # for index in affWithinSDCheck.index:
-                #     combinedSeries[index + 'Aff'] = affWithinSDCheck[index]
+                # Export series
+                stridePairID_subfolder = saveFolder_exportedData.joinpath(stridePairID)
+                os.makedirs(stridePairID_subfolder)
+                gpSeries.to_csv(
+                    stridePairID_subfolder.joinpath("GtPar_RawFeatures.dat"), sep=' ',
+                    index=True, header=False
+                )
 
-                # for index in unAffWithinSDCheck.index:
-                #     combinedSeries[index + 'UnAff'] = unAffWithinSDCheck[index]
+                # Extracting the features, per pair of patient's stride data
+                # === === === ===
+                # Entire stride
+                stride_phase = process_phaseData(
+                    idx, patRB_group, hData, stridePairID,
+                    "initialContact", "endOfTerminalSwing"
+                )
+                # Entire stance
+                stance_phase = process_phaseData(
+                    idx, patRB_group, hData, stridePairID,
+                    "initialContact", "endOfPreswing"
+                )
+                # Entire swing
+                swing_phase = process_phaseData(
+                    idx, patRB_group, hData, stridePairID,
+                    "endOfPreswing", "endOfTerminalSwing"
+                )
 
-                # # Export series
-                # exportSeries = hData.export_data(
-                #     stridePairID, 
-                #     'GtPar_RawFeatures.dat',
-                #     combinedSeries, "STD"
-                # )
-                
-                # # Extracting the features, per pair of patient's stride data
-                # # === === === ===
-                # # Entire stride
-                # stride_phase = process_phase(
-                #     idx, patRB_group, stridePairID,
-                #     "initialContact", "endOfTerminalSwing", "Stride.dat"
-                # );sys.exit()
+                # Save phase data
+                stride_phase.to_csv(stridePairID_subfolder.joinpath("Stride.dat"), sep=' ', index=True)
+                stance_phase.to_csv(stridePairID_subfolder.joinpath("Stance.dat"), sep=' ', index=True)
+                swing_phase.to_csv(stridePairID_subfolder.joinpath("Swing.dat"), sep=' ', index=True)
 
-                # # Entire stance
-                # stance_phase = process_phase(
-                #     idx, patRB_group, stridePairID,
-                #     "initialContact", "endOfPreswing", "Stance.dat"
-                # )
-
-                # # Entire swing
-                # swing_phase = process_phase(
-                #     idx, patRB_group, stridePairID,
-                #     "endOfPreswing", "endOfTerminalSwing", "Swing.dat"
-                # )      
+                sys.exit()
 
 # If the trial has no common pair at all due to all data being faulty
 else:

@@ -70,7 +70,7 @@ def get_gaitphaseTime_RB(_usrarg, _side, _gpDF):
 
 def extract_gaitphase_rawfeatures(
         idx, _pat_rb_obj, _stridePairID,
-        _phaseStart="initialContact", _phaseEnd=None
+        _phaseStart="initialContact", _phaseEnd=None, _healthyData=None
 ):
     '''
     Accepts a "patient_refband_grouping" object and parses the object's properties according
@@ -109,7 +109,7 @@ def extract_gaitphase_rawfeatures(
             phaseStart_unaff_rb, phaseEnd_unaff_rb,
             _pat_rb_obj.affNormFeatures, _pat_rb_obj.unaffNormFeatures,
             _pat_rb_obj.rbMean_corr, _pat_rb_obj.rbLower_corr, _pat_rb_obj.rbUpper_corr,
-            _pat_rb_obj.patCollection_corr[idx]
+            _pat_rb_obj.patCollection_corr[idx], _healthyData=_healthyData
         )
 
     # If user only desires an event : Initial Contact
@@ -142,16 +142,16 @@ class gaitphase_rawfeatures:
             _tGaitLowerAff_RB, _tGaitUpperAff_RB,
             _tGaitLowerUnAff_RB, _tGaitUpperUnAff_RB,
             _affNormFeaturesDict, _unaffNormFeaturesDict,
-            _RB_MeanDF, _RB_LowerDF, _RB_UpperDF, _patDS
+            _RB_MeanDF, _RB_LowerDF, _RB_UpperDF, _patDS, _healthyData=None
     ):
         # Basic patient trial's ID
         self.StridePairID = _stridePairID
 
         # Short preprocessing step to set '%time' as the dataframes' index
-        _RB_MeanDF  = self.set_timeindex(_RB_MeanDF)
-        _RB_LowerDF = self.set_timeindex(_RB_LowerDF)
-        _RB_UpperDF = self.set_timeindex(_RB_UpperDF)
-        _patDS      = self.set_timeindex(_patDS)
+        self._RB_MeanDF  = self.set_timeindex(_RB_MeanDF)
+        self._RB_LowerDF = self.set_timeindex(_RB_LowerDF)
+        self._RB_UpperDF = self.set_timeindex(_RB_UpperDF)
+        self._patDS      = self.set_timeindex(_patDS)
 
         # First casting all the time (%) into float
         _tGaitLowerAff_Patient = float(_tGaitLowerAff_Patient)
@@ -174,7 +174,7 @@ class gaitphase_rawfeatures:
 
         # Partitioning the patient's time-progressions
         self.phasePatDS_Aff, self.phasePatDS_UnAff = self.extract_phaseDF(
-            _patDS,
+            self._patDS,
             _tGaitLowerAff_Patient, _tGaitLowerUnAff_Patient,
             _tGaitUpperAff_Patient, _tGaitUpperUnAff_Patient,
             _affNormFeaturesDict, _unaffNormFeaturesDict
@@ -182,7 +182,7 @@ class gaitphase_rawfeatures:
 
         # Partitioning the upper reference bands
         self.phaseRBUpper_Aff, self.phaseRBUpper_UnAff = self.extract_phaseDF(
-            _RB_UpperDF,
+            self._RB_UpperDF,
             _tGaitLower_RB, _tGaitLower_RB,
             _tGaitUpper_RB, _tGaitUpper_RB,
             _affNormFeaturesDict, _unaffNormFeaturesDict
@@ -190,7 +190,7 @@ class gaitphase_rawfeatures:
 
         # Partitioning the lower reference bands
         self.phaseRBLower_Aff, self.phaseRBLower_UnAff = self.extract_phaseDF(
-            _RB_LowerDF,
+            self._RB_LowerDF,
             _tGaitLower_RB, _tGaitLower_RB,
             _tGaitUpper_RB, _tGaitUpper_RB,
             _affNormFeaturesDict, _unaffNormFeaturesDict
@@ -198,82 +198,12 @@ class gaitphase_rawfeatures:
 
         # Partitioning the mean reference bands
         self.phaseRBMean_Aff, self.phaseRBMean_UnAff = self.extract_phaseDF(
-            _RB_MeanDF,
+            self._RB_MeanDF,
             _tGaitLower_RB, _tGaitLower_RB,
             _tGaitUpper_RB, _tGaitUpper_RB,
             _affNormFeaturesDict, _unaffNormFeaturesDict
         )
-        
 
-        # From Chook
-        # Min (affected side features)
-        feature_ = "kneeJointAff_flexion.q"
-
-        # # MIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        minVal = self.phasePatDS_Aff.min()
-        minVal_time = self.phasePatDS_Aff.index[self.phasePatDS_Aff[feature_] == minVal[feature_]]
-        minRBLower_time = self.phaseRBLower_Aff.index[self.phaseRBLower_Aff[feature_] == self.phaseRBLower_Aff[feature_].min()]
-        minRBUpper_time = self.phaseRBUpper_Aff.index[self.phaseRBUpper_Aff[feature_] == self.phaseRBUpper_Aff[feature_].min()]
-        
-        # If within reference band, the conditions are:
-        # 1. minVal <= upperBand.min()
-        # 2. minVal >= lowerBand.min()
-        plt.figure()
-        plt.plot(_patDS.index, _patDS[feature_], label="Patient")
-        plt.plot(_RB_LowerDF.index, _RB_LowerDF[feature_], label="Lower")
-        plt.plot(_RB_UpperDF.index, _RB_UpperDF[feature_], label="Upper")
-        plt.scatter(minVal_time, minVal[feature_])
-        plt.scatter(minRBLower_time, self.phaseRBLower_Aff[feature_].min())
-        plt.scatter(minRBUpper_time, self.phaseRBUpper_Aff[feature_].min())
-
-        minVal_RBCheck = (minVal <= self.phaseRBUpper_Aff.min()) & (minVal >= self.phaseRBLower_Aff.min())
-        # print(minVal[feature_])
-        # print(self.phaseRBUpper_Aff.min()[feature_])
-        # print(self.phaseRBLower_Aff.min()[feature_])
-        # print(minVal_RBCheck[feature_])
-
-        # # MAX!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # maxVal = phasePatDS_Aff.max()
-        # maxVal_time = phasePatDS_Aff.index[phasePatDS_Aff[feature_] == maxVal[feature_]]
-        # maxRBLower_time = phaseRBLower_Aff.index[phaseRBLower_Aff[feature_] == phaseRBLower_Aff[feature_].max()]
-        # maxRBUpper_time = phaseRBUpper_Aff.index[phaseRBUpper_Aff[feature_] == phaseRBUpper_Aff[feature_].max()]
-
-        # # If within reference band, the conditions are:
-        # # 1. maxVal <= upperBand.max()
-        # # 2. maxVal >= lowerBand.max()
-        # plt.figure()
-        # plt.plot(_patDS.index, _patDS[feature_], label="Patient")
-        # plt.plot(_RB_LowerDF.index, _RB_LowerDF[feature_], label="Lower")
-        # plt.plot(_RB_UpperDF.index, _RB_UpperDF[feature_], label="Upper")
-        # plt.scatter(maxVal_time, maxVal[feature_])
-        # plt.scatter(maxRBLower_time, phaseRBLower_Aff[feature_].max())
-        # plt.scatter(maxRBUpper_time, phaseRBUpper_Aff[feature_].max())
-
-        # maxVal_RBCheck = (maxVal <= phaseRBUpper_Aff.max()) & (maxVal >= phaseRBLower_Aff.max())
-        # print(maxVal[feature_])
-        # print(phaseRBUpper_Aff.max()[feature_])
-        # print(phaseRBLower_Aff.max()[feature_])
-        # print(maxVal_RBCheck[feature_])
-
-        # # MEDIAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # medianVal = phasePatDS_Aff.median()
-
-        # # If within reference band, the conditions are:
-        # # 1. medianVal <= upperBand.median()
-        # # 2. medianVal >= lowerBand.median()
-        # plt.figure()
-        # plt.axhline(medianVal[feature_], label="Patient", color="red")
-        # plt.axhline(phaseRBLower_Aff[feature_].median())
-        # plt.axhline(phaseRBUpper_Aff[feature_].median())
-
-        # medianVal_RBCheck = (medianVal <= phaseRBUpper_Aff.median()) & (medianVal >= phaseRBLower_Aff.median())
-        # print(medianVal[feature_])
-        # print(phaseRBUpper_Aff.median()[feature_])
-        # print(phaseRBLower_Aff.median()[feature_])
-        # print(medianVal_RBCheck[feature_])
- 
-        plt.legend()
-        plt.show()
         # === === === ===
         # Update 01.12.2021
         # -----------------
@@ -286,24 +216,24 @@ class gaitphase_rawfeatures:
         # Patient stats
         # -------------
         self.StatsDF = self.extract_patient_stats(self.phasePatDS_Aff, self.phasePatDS_UnAff)
-        
+
         self.StatsDF = self.StatsDF.drop(
-            labels=['kneeJointUnAff_varus/adduction.q', 
-                    'kneeJointAff_varus/adduction.q', 
-                    'kneeJointUnAff_varus/adduction.qd', 
+            labels=['kneeJointUnAff_varus/adduction.q',
+                    'kneeJointAff_varus/adduction.q',
+                    'kneeJointUnAff_varus/adduction.qd',
                     'kneeJointAff_varus/adduction.qd'
             ]
         )
 
         self.StatsDF = self.StatsDF.rename_axis('Stats')
-        
+
         # Seperate the UnAff side
         self.UnAffDF = self.StatsDF[self.StatsDF.index.str.contains('UnAff')]
-        
+
         # Seperate the Aff side
         StatsDFLength = len(self.StatsDF) // 2
         self.AffDF = self.StatsDF[:StatsDFLength]
-        
+
 
         # === === === ===
         # Patient gait phase metadata
@@ -318,8 +248,77 @@ class gaitphase_rawfeatures:
         # === === === ===
         # Update 05.04.2023 (Chook)
         # -----------------
-        # Obtaining averaged gait phase metadata of healthy test-subjects
-        self.LowerSD, self.UpperSD, self.LowerCI, self.UpperCI = self.initialize_hMetadata()
+        if not _healthyData is None:
+            # Obtaining averaged gait phase metadata of healthy test-subjects
+            self.LowerSD, self.UpperSD, self.LowerCI, self.UpperCI = self.initialize_hMetadata(_healthyData)
+
+
+    def plot_demoFeatures_affNorm(self, feature_):
+        # === === === ===
+        # Update 17.11.2023 (Liaw)
+        # -----------------
+        # If within reference band, the conditions are:
+        # 1. Val <= upperBand<stat>
+        # 2. Val >= lowerBand<stat>
+        
+        # MIN
+        minVal = self.phasePatDS_Aff.min()
+        minVal_time = self.phasePatDS_Aff.index[self.phasePatDS_Aff[feature_] == minVal[feature_]]
+        minRBLower_time = self.phaseRBLower_Aff.index[
+            self.phaseRBLower_Aff[feature_] == self.phaseRBLower_Aff[feature_].min()
+        ]
+        minRBUpper_time = self.phaseRBUpper_Aff.index[
+            self.phaseRBUpper_Aff[feature_] == self.phaseRBUpper_Aff[feature_].min()
+        ]
+
+        fig, axs = plt.subplots(1, 2, figsize=(9,5))
+        axs[0].plot(self._patDS.index, self._patDS[feature_], label="Patient", color="red")
+        axs[0].plot(self._RB_LowerDF.index, self._RB_LowerDF[feature_], "k-.", label="Lower")
+        axs[0].plot(self._RB_UpperDF.index, self._RB_UpperDF[feature_], "k-.", label="Upper")
+
+        axs[0].scatter(minVal_time, minVal[feature_], color="red")
+        axs[0].scatter(minRBLower_time, self.phaseRBLower_Aff[feature_].min(), color="blue")
+        axs[0].scatter(minRBUpper_time, self.phaseRBUpper_Aff[feature_].min(), color="blue")
+        minVal_RBCheck = (minVal <= self.phaseRBUpper_Aff.min()) & (minVal >= self.phaseRBLower_Aff.min())
+        print(f"Patient's {feature_} (min.) : {minVal[feature_]}")
+        print(f"RB Upper {feature_} (min.)  : {self.phaseRBUpper_Aff.min()[feature_]}")
+        print(f"RB Lower {feature_} (min.)  : {self.phaseRBLower_Aff.min()[feature_]}")
+        print(f"Patient value within norm? {minVal_RBCheck[feature_]}")
+
+        # MAX
+        maxVal = self.phasePatDS_Aff.max()
+        maxVal_time = self.phasePatDS_Aff.index[self.phasePatDS_Aff[feature_] == maxVal[feature_]]
+        maxRBLower_time = self.phaseRBLower_Aff.index[
+            self.phaseRBLower_Aff[feature_] == self.phaseRBLower_Aff[feature_].max()
+        ]
+        maxRBUpper_time = self.phaseRBUpper_Aff.index[
+            self.phaseRBUpper_Aff[feature_] == self.phaseRBUpper_Aff[feature_].max()
+        ]
+        axs[0].scatter(maxVal_time, maxVal[feature_], color="red")
+        axs[0].scatter(maxRBLower_time, self.phaseRBLower_Aff[feature_].max(), color="blue")
+        axs[0].scatter(maxRBUpper_time, self.phaseRBUpper_Aff[feature_].max(), color="blue")
+        maxVal_RBCheck = (maxVal <= self.phaseRBUpper_Aff.max()) & (maxVal >= self.phaseRBLower_Aff.max())
+        print("=== === === === === === ===")
+        print(f"Patient's {feature_} (max.) : {maxVal[feature_]}")
+        print(f"RB Upper {feature_} (max.)  : {self.phaseRBUpper_Aff.max()[feature_]}")
+        print(f"RB Lower {feature_} (max.)  : {self.phaseRBLower_Aff.max()[feature_]}")
+        print(f"Patient value within norm? {maxVal_RBCheck[feature_]}")
+
+        # MEDIAN
+        medianVal = self.phasePatDS_Aff.median()
+        axs[1].axhline(medianVal[feature_], color="red")
+        axs[1].axhline(self.phaseRBLower_Aff[feature_].median())
+        axs[1].axhline(self.phaseRBUpper_Aff[feature_].median())
+
+        medianVal_RBCheck = (medianVal <= self.phaseRBUpper_Aff.median()) & (medianVal >= self.phaseRBLower_Aff.median())
+        print("=== === === === === === ===")
+        print(f"Patient's {feature_} (med.) : {medianVal[feature_]}")
+        print(f"RB Upper {feature_} (med.)  : {self.phaseRBUpper_Aff.median()[feature_]}")
+        print(f"RB Lower {feature_} (med.)  : {self.phaseRBLower_Aff.median()[feature_]}")
+        print(f"Patient value within norm? {medianVal_RBCheck[feature_]}")
+
+        plt.tight_layout()
+        plt.show()
 
 
     # === === === ===
@@ -340,7 +339,7 @@ class gaitphase_rawfeatures:
             lower = self.phaseRBLower_UnAff
         else:
             raise ValueError("Invalid side. Please choose 'Aff' or 'UnAff'.")
-    
+
         stats_results = {}
         for stat_type in ['min', 'median', 'max']:
             if stat_type == 'min':
@@ -352,15 +351,15 @@ class gaitphase_rawfeatures:
             else:
                 upper_limit = upper.max()
                 lower_limit = lower.max()
-            
+
             patStat = getattr(sidePatData, stat_type)()
-            checkRB = (~(patStat.between(lower_limit, upper_limit))).astype(int);print(checkRB)
+            checkRB = (~(patStat.between(lower_limit, upper_limit))).astype(int)
             stats_results[stat_type.capitalize()] = checkRB
-    
+
         checkRB_df = pd.DataFrame(stats_results)
         checkRB_df = checkRB_df.rename_axis('OriIndex')
         checkRB_df = checkRB_df[~checkRB_df.index.str.contains('/adduction')]
-        
+
         return checkRB_df
 
 
@@ -370,8 +369,8 @@ class gaitphase_rawfeatures:
 
         Input: healthyData <ckhutils/h_data.py::healthy_data(_refbandDir)>
         '''
-        events = healthyData.gait_eve.set_index('Measure')
-        phases = healthyData.gait_pha.set_index('Measure')
+        events = healthyData.gaitEvents.set_index('Measure')
+        phases = healthyData.gaitPhases.set_index('Measure')
 
         lowerSD = pd.concat([events[['Lower-S.D']], phases[['Lower-S.D']]], axis=0)/100
         upperSD = pd.concat([events[['Upper-S.D']], phases[['Upper-S.D']]], axis=0)/100
@@ -408,7 +407,7 @@ class gaitphase_rawfeatures:
 
         elif _errorband == 'ci':
             ci_or_std = self.UpperCI
-        
+
         # Entire stride
         if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
             gw="StrideWidth"
@@ -429,7 +428,7 @@ class gaitphase_rawfeatures:
                 "GaitStart_UnAff": ci_or_std.loc[_phaseStart].values[0]
             }
         )
-        
+
         return h_upper_metadata
 
 
@@ -443,7 +442,7 @@ class gaitphase_rawfeatures:
             ci_or_std = self.LowerSD
         elif _errorband == 'ci':
             ci_or_std = self.LowerCI
-        
+
         # Entire stride
         if _phaseStart == "initialContact" and _phaseEnd == "endOfTerminalSwing":
             gw="StrideWidth"
@@ -451,7 +450,7 @@ class gaitphase_rawfeatures:
         # Stance phase
         elif _phaseStart == 'initialContact' and _phaseEnd == 'endOfPreswing':
             gw="endOfPreswing"
-            
+
         # Swing phase
         elif _phaseStart == 'endOfPreswing' and _phaseEnd == 'endOfTerminalSwing':
             gw="SwingWidth"
@@ -464,9 +463,9 @@ class gaitphase_rawfeatures:
                 "GaitStart_UnAff": ci_or_std.loc[_phaseStart].values[0]
             }
         )
-        
+
         return h_lower_metadata
-    
+
 
     def extract_patient_stats(self, _phasePatientAff, _phasePatientUnAff):
         '''

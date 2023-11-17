@@ -1,5 +1,6 @@
-import time
 import pandas as pd
+
+from stdutils import extract_gaitphase_rawfeatures
 
 def extract_gaitparameters(gp, _affSide, _side="Aff", stance_swing=False):
     '''
@@ -63,7 +64,7 @@ def extract_gaitparameters(gp, _affSide, _side="Aff", stance_swing=False):
     
     return gpSeries
 
-def check_gpWithinNorm(_gpSeriesAff, _gpSeriesUnAff, _healthyData):
+def check_gpWithinNorm(_gpSeries, _gpSeriesAff, _gpSeriesUnAff, _healthyData):
     # Remove "Aff" for series comparison
     gpSeriesAff_tmp = pd.Series(
         _gpSeriesAff.values, index=_gpSeriesAff.index.str.replace("Aff", '')
@@ -74,26 +75,87 @@ def check_gpWithinNorm(_gpSeriesAff, _gpSeriesUnAff, _healthyData):
         _gpSeriesUnAff.values, index=_gpSeriesUnAff.index.str.replace("UnAff", '')
     )
     
-    # S.D check
-    parameterSD = hData.gait_par.set_index('Measure')
-    affWithinSDCheck = hData.check_within_limits(
-        gpSeriesAff, 
-        parameterSD['Lower-S.D'], 
-        parameterSD['Upper-S.D']
+    # Check if patient's values lie within the standard deviation
+    parameterSD = _healthyData.gaitParameters.set_index('Measure')
+
+    affWithinSDCheck = _healthyData.check_within_limits(
+        gpSeriesAff_tmp, parameterSD['Lower-S.D'], parameterSD['Upper-S.D']
+    )   
+    unAffWithinSDCheck = _healthyData.check_within_limits(
+        gpSeriesUnAff_tmp, parameterSD['Lower-S.D'], parameterSD['Upper-S.D']
     )
-        
-    unAffWithinSDCheck = hData.check_within_limits(
-        gpSeriesUnAff, 
-        parameterSD['Lower-S.D'], 
-        parameterSD['Upper-S.D']
-    )
-        
-    combinedSeries = pd.Series(dtype=object,index=gpSeries.index)
-    combinedSeries['StridePairID'] = gpSeries['StridePairID']
-    combinedSeries['Auxiliary'] = gpSeries['Auxiliary']
+
+    # Re-initializing the gait parameters series (_gpSeries)
+    combinedSeries = pd.Series(dtype=object,index=_gpSeries.index)
+    combinedSeries['StridePairID'] = _gpSeries['StridePairID']
+    combinedSeries['Auxiliary']    = _gpSeries['Auxiliary']
     
     for index in affWithinSDCheck.index:
         combinedSeries[index + 'Aff'] = affWithinSDCheck[index]
 
     for index in unAffWithinSDCheck.index:
         combinedSeries[index + 'UnAff'] = unAffWithinSDCheck[index]
+
+    return combinedSeries
+
+def process_phaseData(idx, patRB_group, _healthyData, stridePairID, phaseStart, phaseEnd):
+    '''
+    Process the phases to print out 1 or 0 and export .dat file 
+    '''
+    phase_data = extract_gaitphase_rawfeatures(
+        idx, patRB_group, stridePairID, _phaseStart=phaseStart, _phaseEnd=phaseEnd,
+        _healthyData=_healthyData
+    )
+
+    # Create a column OriIndex to retain original index
+    phase_data.UnAffDF = pd.concat(
+        [
+            phase_data.UnAffDF, 
+                pd.DataFrame(
+                    data=list(phase_data.UnAffDF.index), 
+                    columns=['OriIndex'], 
+                    index=phase_data.UnAffDF.index
+                )
+        ], axis=1
+    )
+
+    phase_data.AffDF = pd.concat(
+        [
+            phase_data.AffDF, 
+            pd.DataFrame(
+                data=list(phase_data.AffDF.index), 
+                columns=['OriIndex'], 
+                index=phase_data.AffDF.index
+            )
+        ], axis=1
+    )
+
+    # Unaffected side of subject do within refband check (within=0, else=1) 
+    phase_UnAff_RB_check = phase_data.within_RB_check('UnAff')
+
+    # Affected side of subject do within refband check (within=0, else=1)
+    phase_Aff_RB_check = phase_data.within_RB_check('Aff')
+
+    # Get healthy subject upper and lower boundary metadata
+    phase_upper = phase_data.get_hUpperMetadata(phaseStart, phaseEnd, "std")
+    phase_lower = phase_data.get_hLowerMetadata(phaseStart, phaseEnd, "std")
+    pat_phase = phase_data.Metadata
+
+    # Patient metadat of subject do is_in refband check (within=0, else=1)
+    phase_is_in = ((pat_phase >= phase_lower) & (pat_phase <= phase_upper))
+    phase_is_in = (~phase_is_in).astype(int)
+
+    # Unravel m x 3 data into m x 1 dataframe
+    phase_Aff_RB_check = _healthyData.unravel(phase_Aff_RB_check)
+    phase_UnAff_RB_check = _healthyData.unravel(phase_UnAff_RB_check)
+
+    phase_merged = pd.concat(
+        [
+            phase_is_in, 
+            phase_Aff_RB_check, 
+            phase_UnAff_RB_check
+        ], axis=0
+    ).stack().reset_index(level=1, drop=True)
+
+    return phase_merged
+
