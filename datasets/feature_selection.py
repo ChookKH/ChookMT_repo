@@ -5,7 +5,7 @@ from sklearn.feature_selection import mutual_info_regression, f_regression
 
 # Check the command-line argument
 if len(sys.argv) != 3:
-    print('Usage: python .\feature_selection.py <std|ci|liaw> <Trunk|Leg|Arm|Speed|Fluency|Stability>')
+    print('Usage: python feature_selection.py <std|ci|liaw> <Trunk|Leg|Arm|Speed|Fluency|Stability>')
     sys.exit()
 
 option = sys.argv[1]
@@ -97,8 +97,8 @@ def save_feature_list(ensemble_name, option, target_variable, df):
 
 # Define weights
 weights = get_weights('Datasets_SD','TrainDataset_SD.dat')
-arm_weights = get_weights('Datasets_SD','NewArmDataset_SD.dat')
-leg_weights = get_weights('Datasets_SD','NewLegDataset_SD.dat')
+arm_weights = get_weights('Datasets_SD','ArmDataset_SD.dat')
+leg_weights = get_weights('Datasets_SD','LegDataset_SD.dat')
 
 
 # === === === ===
@@ -108,25 +108,25 @@ dataset_mapping = {
     {
         'folder': 'Datasets_SD',
         'test_file': 'TestDataset_SD.dat',
-        'train_file': 'NewTrainDataset_SD.dat',
-        'arm_file': 'NewArmDataset_SD.dat',
-        'leg_file': 'NewLegDataset_SD.dat'
+        'train_file': 'TrainDataset_SD.dat',
+        'arm_file': 'ArmDataset_SD.dat',
+        'leg_file': 'LegDataset_SD.dat'
     },  
     'ci': 
     {
         'folder': 'Datasets_CI',
         'test_file': 'TestDataset_CI.dat',
-        'train_file': 'NewTrainDataset_CI.dat',
-        'arm_file': 'NewArmDataset_CI.dat',
-        'leg_file': 'NewLegDataset_CI.dat'
+        'train_file': 'TrainDataset_CI.dat',
+        'arm_file': 'ArmDataset_CI.dat',
+        'leg_file': 'LegDataset_CI.dat'
     },
     'liaw': 
     {
         'folder': 'Datasets_Liaw',
         'test_file': 'TestDataset_Liaw.dat',
-        'train_file': 'NewTrainDataset_Liaw.dat',
-        'arm_file': 'NewArmDataset_Liaw.dat',
-        'leg_file': 'NewLegDataset_Liaw.dat'        
+        'train_file': 'TrainDataset_Liaw.dat',
+        'arm_file': 'ArmDataset_Liaw.dat',
+        'leg_file': 'LegDataset_Liaw.dat'        
     }
 }
 
@@ -186,7 +186,7 @@ if option in dataset_mapping:
     }, index=XtrainDF.columns)
 
     mi_file_name = f'mi_{option}_{target_variable}.csv'
-
+    
 
     # === === === ===
     # Feature selection using f-regression
@@ -198,7 +198,7 @@ if option in dataset_mapping:
     }, index=XtrainDF.columns)
 
     f_file_name = f'f_{option}_{target_variable}.csv'
-
+    
   
     # === === === ===
     # Call R csv files
@@ -207,7 +207,7 @@ if option in dataset_mapping:
     r_df = pd.read_csv(file_path)
     r_df.set_index(r_df.columns[0], inplace=True)
     r_df.index.name = ''
-
+    
     
     # === === === === 
     # Ensemble methods
